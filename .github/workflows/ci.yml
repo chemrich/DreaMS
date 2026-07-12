@@ -34,11 +34,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        # gpu-cuda branch: 3.13 only (requires-python <3.14 — CUDA has no cp314
-        # wheels). Note: CI runners are CPU-only, so on Linux this installs the
-        # heavy +cu126 torch but only exercises the CPU code paths; GPU is
-        # validated separately via dreams/training/smoke_test.sh on a real GPU VM.
+        # gpu-cuda branch: Linux only, 3.13 only (requires-python <3.14 — CUDA has
+        # no cp314 wheels). CI runners are CPU-only, so this installs the heavy
+        # +cu126 torch but only exercises the CPU code paths; GPU is validated
+        # separately via dreams/training/smoke_test.sh on a real GPU VM.
+        os: [ubuntu-latest]
         python-version: ["3.13"]
     steps:
       - uses: actions/checkout@v4
@@ -47,9 +47,8 @@ jobs:
         with:
           enable-cache: true
 
-      # Exact, locked env from uv.lock. torch resolves to the CPU build on Linux
-      # via [tool.uv.sources] (no CUDA cp314 wheel exists); macOS uses its PyPI
-      # CPU/MPS wheel. --locked fails if the lock is stale vs pyproject.toml.
+      # Exact, locked env from uv.lock (torch +cu126 from the PyTorch index).
+      # --locked fails if the lock is stale vs pyproject.toml.
       - name: Sync (locked)
         run: uv sync --locked --extra dev --python ${{ matrix.python-version }}
 

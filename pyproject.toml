@@ -101,18 +101,14 @@ include = ["dreams*"]
 # from the committed uv.lock for byte-reproducible environments; `uv run ...`
 # executes inside that env.
 #
-# This branch pulls the CUDA 12.6 build of torch on Linux (training VMs). To
+# This branch pulls the CUDA 12.6 build of torch for Linux x86_64 GPU VMs. To
 # target a different toolkit, change cu126 -> cu128/cu129 in the index url, then
-# re-run `uv lock`. macOS keeps its PyPI CPU/MPS wheel so local dev on a Mac works.
+# re-run `uv lock`.
 #
-# Resolution is limited to the two environments this branch targets (Linux x86_64
-# GPU VMs and macOS dev); otherwise uv's universal resolver fails on platforms the
-# CUDA index doesn't serve.
+# Linux x86_64 only (like the rest of the project — it never runs on macOS);
+# resolution is pinned to that single environment.
 [tool.uv]
-environments = [
-    "sys_platform == 'linux' and platform_machine == 'x86_64'",
-    "sys_platform == 'darwin'",
-]
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
 
 [[tool.uv.index]]
 name = "pytorch-cuda"
@@ -120,9 +116,7 @@ url = "https://download.pytorch.org/whl/cu126"
 explicit = true
 
 [tool.uv.sources]
-torch = [
-    { index = "pytorch-cuda", marker = "sys_platform == 'linux'" },
-]
+torch = [{ index = "pytorch-cuda" }]
 
 [tool.ruff]
 line-length = 100

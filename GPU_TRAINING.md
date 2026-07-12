@@ -5,8 +5,8 @@ differs from `main` only in the packaging/training setup — no library code
 changes — so it can be rebased on `main` as the project evolves.
 
 **What's different from `main`:**
-- `torch` is pulled as the **CUDA 12.6** build on Linux (`[tool.uv.sources]` → the
-  `cu126` PyTorch index); macOS still gets the CPU/MPS wheel for local dev.
+- `torch` is pulled as the **CUDA 12.6** build (`[tool.uv.sources]` → the `cu126`
+  PyTorch index) instead of `main`'s CPU build. Both branches are Linux x86_64 only.
 - `requires-python` is pinned to **3.13** (PyTorch has no CUDA `cp314` wheels yet).
 - `uv.lock` is regenerated against the CUDA index.
 - `fine_tune.sh` uses `--train_precision 32` (see note below).
