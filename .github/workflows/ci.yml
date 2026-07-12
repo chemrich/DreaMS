@@ -18,11 +18,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: pip install ruff>=0.6
+      - run: pip install "ruff>=0.6" "mypy>=1.11"
       - name: Ruff lint
         run: ruff check .
       # `ruff format --check` is intentionally deferred: applying it repo-wide is a
       # large mechanical diff that belongs in its own PR. Add it here once done.
+      - name: Mypy
+        # Same gradual-typing config as the pre-commit mypy hook ([tool.mypy]);
+        # legacy modules are quarantined, so this is green today.
+        run: mypy
 
   test:
     name: test (py${{ matrix.python-version }} / ${{ matrix.os }})

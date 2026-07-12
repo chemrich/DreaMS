@@ -63,6 +63,8 @@ dreams = "dreams.cli:main"
 [project.optional-dependencies]
 dev = [
     "ruff>=0.6",             # replaces black (lint + format in one tool)
+    "mypy>=1.11",
+    "pre-commit>=3.7",
     "pytest>=8.2.1",
     "pytest-cov>=5.0.0",
     "Cython>=3.0.9",         # build-time dep for the SpectralEntropy git package below
@@ -121,3 +123,35 @@ markers = [
 [tool.coverage.run]
 source = ["dreams"]
 omit = ["dreams/training/*", "experiments/*"]
+
+[tool.mypy]
+python_version = "3.13"
+files = ["dreams"]
+exclude = '(^|/)(experiments|tutorials|docs)/'
+# Third-party deps (rdkit, numba, pyopenms, matchms, ...) ship no type stubs.
+ignore_missing_imports = true
+# Only report errors in the file being checked, not in untyped modules it imports.
+follow_imports = "silent"
+# Gradual typing: lenient globally now; tighten (disallow_untyped_defs, etc.) per
+# module as it gets typed. 18 of 31 modules are already clean under this config.
+
+# Quarantine — these legacy modules still have type errors (169 total). They're
+# excused from failing CI so the hook is green today; un-quarantine one at a time
+# as it's typed. Progress = shrinking this list. See per-file counts in the PR.
+[[tool.mypy.overrides]]
+module = [
+    "dreams.api",
+    "dreams.utils.plots",
+    "dreams.utils.io",
+    "dreams.utils.data",
+    "dreams.utils.misc",
+    "dreams.utils.dformats",
+    "dreams.utils.mols",
+    "dreams.utils.spectra",
+    "dreams.utils.annotation",
+    "dreams.utils.lcms",
+    "dreams.models.heads.heads",
+    "dreams.models.dreams.dreams",
+    "dreams.algorithms.murcko_hist.murcko_hist",
+]
+ignore_errors = true
