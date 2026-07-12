@@ -29,6 +29,7 @@ class PreTrainedModel:
         self.model = model.eval()
         self.n_highest_peaks = n_highest_peaks
 
+    @staticmethod
     def remove_unused_backbone_parameters(model):
         """Helper function to remove unused heads from the pre-trained DreaMS backbone model."""
         if hasattr(model, 'ff_out'):

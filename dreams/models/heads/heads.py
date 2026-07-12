@@ -348,13 +348,14 @@ class IntRegressionHead(RegressionHead):
         """
         super().__init__(backbone=backbone_pth, lr=lr, weight_decay=weight_decay, sigmoid=False, out_dim=out_dim)
 
-    def validation_step(self, data, batch_idx):
+    def validation_step(self, data, batch_idx, dataloader_idx=0):
         """
         Perform a single validation step.
 
         Args:
             data (dict): Input data.
             batch_idx (int): Index of the current batch.
+            dataloader_idx (int): Index of the dataloader.
 
         Returns:
             torch.Tensor: The computed loss.
@@ -396,8 +397,6 @@ class BinClassificationHead(FineTuningHead):
         """
         super().__init__(backbone=backbone_pth, lr=lr, weight_decay=weight_decay, precursor_emb=head_phi_depth == 0)
         self.head = nn.Sequential(nn.Linear(self.backbone.d_model, 1), nn.Sigmoid())
-        self.metrics: dict[str, Any] = {}
-
         # TODO: refactor
         self.train_acc, self.val_acc = BinaryAccuracy(), BinaryAccuracy()
         self.train_prec, self.val_prec = BinaryPrecision(), BinaryPrecision()

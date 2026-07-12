@@ -357,9 +357,8 @@ class MSData:
         logger = None
         if store_extra:
             if log_path is None:
-                if output_pth is None:
-                    raise ValueError('`log_path` or `output_pth` is required when `store_extra=True`.')
-                log_path = str(output_pth.with_suffix('.log'))
+                # Log beside the output file when there is one, otherwise beside the input.
+                log_path = str((output_pth if output_pth is not None else pth).with_suffix('.log'))
             logger = io.setup_logger(log_path, log_name=pth.stem)
         df = io.read_mzml(pth, output_path=output_pth, scan_range=scan_range, verbose=verbose_parser, store_extra=store_extra, logger=logger)
 
