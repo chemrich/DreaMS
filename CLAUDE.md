@@ -142,17 +142,14 @@ CPU configuration"; Proxmox: CPU type `host`; QEMU: `-cpu host`). Do not add
 code workarounds for this. Note that AVX2/FMA also make torch far faster, so a
 masked CPU is a large silent performance tax.
 
-**Verify the hypervisor fix landed** (the dev VM was reconfigured for this on
-2026-07-12):
+**RESOLVED on 2026-07-12** for the dev VM: the Proxmox CPU type was set to `host`,
+and the guest now reports `Intel(R) Core(TM) i7-14700` with `avx`/`avx2`/`fma`
+present. Slow tests then ran **10 consecutive times with zero failures** (the bar
+was 5, since the crash was ~1-in-5 and a single green run proves nothing). Slow
+suite runtime also fell ~18s → ~12.8s, the performance tax coming back.
 
-```bash
-grep -w avx2 /proc/cpuinfo >/dev/null && echo "AVX2 present — good" || echo "still masked"
-lscpu | grep 'Model name'        # should no longer say "QEMU Virtual CPU"
-for i in 1 2 3 4 5; do uv run pytest -m slow -q | tail -1; done   # 5/5 clean
-```
-
-Five consecutive clean slow runs is the bar: the crash was ~1-in-5, so a single
-green run proves nothing.
+Nothing to do here unless the symptom returns — on a rebuilt VM or a new machine,
+re-check with the two diagnostic commands above before suspecting DreaMS code.
 
 ## Load-bearing dependency facts (don't regress these)
 
