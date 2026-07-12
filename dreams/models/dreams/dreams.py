@@ -201,6 +201,7 @@ class DreaMS(pl.LightningModule):
             if self.train_objective.endswith('hot'):
 
                 # Decode peak embeddings to one hot m/z classes
+                assert self.ff_out is not None  # built for every 'hot' train_objective
                 pred_mz = self.ff_out(pred_embs[mask])
 
                 # Convert ground-truth m/z values to one-hot classes
@@ -225,6 +226,7 @@ class DreaMS(pl.LightningModule):
                 if self.entropy_label_smoothing > 0:
                     loss -= self.entropy_label_smoothing * torch.distributions.Categorical(p_mz).entropy().mean()
             elif self.train_objective == 'mask_mz':
+                assert self.ff_out is not None  # built for the 'mask_mz' objective
                 pred_mz = self.ff_out(pred_embs[mask])
                 real_mz = real[..., [0]]
                 loss = self.mz_masking_loss(pred_mz, real_mz)
@@ -407,7 +409,7 @@ class DreaMS(pl.LightningModule):
         # Spectrum -> InChI key retrieval validation
         if (NIST20 / 'nist20_clean_spec_entropy_[M+H]+_retrieval.pkl').exists() and \
             (NIST20 / 'nist20_clean_spec_entropy_[M+H]+_50k_pairs_retrieval.pkl').exists():
-            val = du.SpecRetrievalValidation(
+            val: du.ImplExplValidation = du.SpecRetrievalValidation(
                 NIST20 / 'nist20_clean_spec_entropy_[M+H]+_retrieval.pkl',
                 NIST20 / 'nist20_clean_spec_entropy_[M+H]+_50k_pairs_retrieval.pkl',
                 dformat=self.dformat,

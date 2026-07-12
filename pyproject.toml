@@ -165,7 +165,16 @@ follow_imports = "silent"
 # `uv tool run mypy@2.2.0`, i.e. no project deps installed. A full env
 # (`uv run mypy`) makes mypy load rdkit's bundled stubs, which contain a syntax
 # error it can't parse. Isolated runs rely on ignore_missing_imports and are fine.
-# Gradual typing: lenient globally (no disallow_untyped_defs yet), but every module
-# in the `dreams` package is now type-clean — the ignore_errors quarantine is gone.
-# Keep it that way: fix new errors rather than re-adding an overrides block.
-# Next step to tighten: enable disallow_untyped_defs per module.
+# Every module is type-clean — the ignore_errors quarantine is gone. Keep it that
+# way: fix new errors rather than re-adding an overrides block.
+#
+# check_untyped_defs: mypy SKIPS the bodies of unannotated functions by default, and
+# this codebase has ~500 of them — so most of it was never actually being checked.
+# Turning this on analyses those bodies without requiring any annotations, and it
+# immediately found three latent bugs (a TypeError from a duplicate `lr` kwarg in
+# train.py, a call to a non-existent MSData.get_formulas, and the charge_feature
+# breakage). Do not turn it off.
+check_untyped_defs = true
+# Still not enabled: disallow_untyped_defs. That one only *demands* annotations on the
+# ~500 untyped defs; it finds no bugs by itself, so it's low-yield churn. Do it
+# module-by-module if/when the annotations are wanted for their own sake.

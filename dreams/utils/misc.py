@@ -321,7 +321,7 @@ def chunk_list_eq_sum(lst, chunks_n, val=lambda e: e):
     """
 
     # Initialize heap of bins. Bin - [sum of bin, elements].
-    bins = [[0, []] for _ in range(chunks_n)]
+    bins: list[list] = [[0, []] for _ in range(chunks_n)]
     heapq.heapify(bins)  # NOTE: heapify builds heap wrt to first elements of bins
 
     # Traverse over sorted (desc) input list.

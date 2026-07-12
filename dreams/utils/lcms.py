@@ -166,7 +166,7 @@ def get_tight_xics(msdata, mz_tol_1=0.5, mz_tol_2=0.01, intensity_rel_tol=0.1, x
     # Build XIC for m/z of each base peak
 
     xics = []
-    xics_mzs = []
+    xics_mzs: list = []
 
     for i in range(len(ms1_spectra)):
         spectrum = ms1_spectra[i]
@@ -333,13 +333,14 @@ def get_pwiz_stats(msdata):
     of such spectra and the histogram of types of spectra converted by msconvert.
     """
 
-    pwiz_stats = Counter()
+    pwiz_stats: Counter = Counter()
     for i, spectrum in enumerate(msdata):
         for dp in spectrum.getDataProcessing():
             pwiz = 'proteowizard' in dp.getSoftware().getName().lower()
             conversion_mzml = pyms.ProcessingAction.CONVERSION_MZML in dp.getProcessingActions()
             if pwiz and conversion_mzml:
                 spec_type = get_spectrum_type(spectrum)
+                assert isinstance(spec_type, SpecType)  # never None/int for spectra from an MSExperiment
                 pwiz_stats['pwiz_to_mzml_type={}'.format(spec_type.value)] += 1
                 peaks = spectrum.get_peaks()
                 if spec_type == SpecType.CENTROID and peaks and np.count_nonzero(peaks[1] == 0):

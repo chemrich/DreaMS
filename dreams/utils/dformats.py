@@ -167,6 +167,7 @@ class DataFormatAll(DataFormat):
 
 class DataFormatBuilder:
     def __init__(self, dformat_name):
+        self.dformat: DataFormat
         if dformat_name == 'A':
             self.dformat = DataFormatA()
         elif dformat_name == 'B':

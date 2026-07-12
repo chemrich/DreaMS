@@ -191,7 +191,7 @@ def main(args):
         #         )
         elif args.model == 'DeepSets':
             if args.train_objective.startswith('fp'):
-                model = DeepSetsPeaksFingerprint(args.train_objective, lr=args.lr)
+                model = DeepSetsPeaksFingerprint(fp_str=args.train_objective, lr=args.lr)
             elif args.train_objective in {'num_C', 'num_O'}:
                 model = DeepSetsPeakIntReg(lr=args.lr)
             elif args.train_objective in {'qed', 'ms2prop_labels'}:
