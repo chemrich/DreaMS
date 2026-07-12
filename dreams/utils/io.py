@@ -1,3 +1,8 @@
+# Annotations are strings at runtime (PEP 563). Load-bearing here: `pyms` is a deferred
+# module (see below), so an evaluated annotation like `-> Optional[pyms.MSExperiment]` would
+# import pyopenms at module load and defeat the deferral.
+from __future__ import annotations
+
 import logging
 import sys
 import pickle
@@ -15,8 +20,17 @@ import time
 from lxml import etree
 import io as std_io
 import wandb
-with contextlib.redirect_stderr(std_io.StringIO()):
+import typing as T
+from dreams.utils.lazy import LazyModule
+
+# Deferred: pyopenms is only needed for mzML I/O, but importing it here pulled a fragile
+# native extension into every `import dreams.api` — and its DLL init crashes hard on some
+# Windows boxes. See dreams/utils/lazy.py. Type checkers get the real module; at runtime it
+# is imported on first use.
+if T.TYPE_CHECKING:
     import pyopenms as pyms
+else:
+    pyms = LazyModule('pyopenms')
 import traceback
 from collections import Counter
 from functools import cache

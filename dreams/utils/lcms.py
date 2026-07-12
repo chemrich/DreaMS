@@ -1,12 +1,23 @@
+# Annotations are strings at runtime (PEP 563). Load-bearing here: `pyms` is a deferred
+# module (see below), so an evaluated annotation like `spec: pyms.MSSpectrum` would import
+# pyopenms at module load and defeat the deferral.
+from __future__ import annotations
+
 import pandas as pd
 from enum import Enum, auto, unique
 from typing import Optional, Union
 import statistics as stats
 import numpy as np
-import contextlib
-import io as std_io
-with contextlib.redirect_stderr(std_io.StringIO()):
+import typing as T
+from dreams.utils.lazy import LazyModule
+
+# Deferred: see dreams/utils/lazy.py — pyopenms is an mzML-only dependency whose import
+# crashes hard on some Windows machines, and the embedding path never needs it. Type
+# checkers get the real module; at runtime it is imported on first use.
+if T.TYPE_CHECKING:
     import pyopenms as pyms
+else:
+    pyms = LazyModule('pyopenms')
 from collections import Counter
 import dreams.utils.spectra as su
 import dreams.utils.misc as utils
