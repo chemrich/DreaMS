@@ -119,17 +119,20 @@ torch = [{ index = "pytorch-cpu" }]
 [tool.ruff]
 line-length = 100
 target-version = "py313"
-# Notebooks and one-off scripts aren't library code — linting them is noise.
-# Bring them under lint in a dedicated pass later.
-extend-exclude = ["experiments", "tutorials", "docs", "*.ipynb"]
+# experiments/ and the notebooks are linted too: they were excluded as "not library
+# code", but that let real breakage (undefined names, duplicate imports) sit in the
+# tutorials users actually run. Only generated docs are excluded.
+extend-exclude = ["docs"]
 
 [tool.ruff.lint]
 # Start lenient so lint can be turned on in CI without a huge upfront cleanup;
 # tighten (add "I" import-sort, "UP" pyupgrade, "B" bugbear) as the codebase is modernized.
 select = ["E", "F", "W"]
-# Enforced now (all mechanically fixable): F401 unused imports, F541 empty
-# f-strings, W29x whitespace. Ignored below are structural/legacy-debt rules that
-# need manual refactoring — tracked as Phase 2 cleanup, not day-one blockers:
+# F821 (undefined name) and F841 (unused local) are the rules that mechanically
+# catch the bug class this codebase actually suffers from. They were only ever
+# ignored because `import *` defeated ruff's name resolution; the wildcards are
+# gone, so both are enforced. F403/F405/F811 are likewise obsolete. Do not
+# re-add a wildcard import — it would silently disarm F821 again.
 ignore = [
     "E501",  # line too long
     "E402",  # import not at top — the deliberate `warnings.filterwarnings` prelude in api.py
@@ -137,12 +140,21 @@ ignore = [
     "E713",  # `not ... in` test
     "E721",  # type comparison with `==`
     "E741",  # ambiguous var name (e.g. `l`)
-    "F403",  # `import *`
-    "F405",  # name may be from `import *`
-    "F811",  # redefinition (mostly wildcard-import shadowing)
-    "F821",  # undefined name (ruff can't resolve wildcard-imported names)
-    "F841",  # unused local variable
 ]
+
+# Notebooks are linted too, with rules tuned per role.
+[tool.ruff.lint.per-file-ignores]
+# tutorials/ gets NO exemptions — they are user-facing, and F821 (undefined name) is
+# fully armed. Note this only works because their `from dreams.definitions import *`
+# preambles were replaced with explicit imports: with a star import present, ruff
+# cannot resolve names and downgrades every unknown one to F405 ("may be undefined"),
+# which silently disarms F821. Do not re-add a star import to a tutorial.
+#
+# experiments/ notebooks are research artifacts — cells are run out of order and left
+# half-finished, so unresolved names there are noise, not signal. Everything else stays
+# enforced: a plain syntax error (a missing comma in mol_props/baselines.ipynb) had been
+# sitting unnoticed behind the old blanket exclusion.
+"experiments/**/*.ipynb" = ["F403", "F405", "F821"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -168,7 +180,16 @@ follow_imports = "silent"
 # `uv tool run mypy@2.2.0`, i.e. no project deps installed. A full env
 # (`uv run mypy`) makes mypy load rdkit's bundled stubs, which contain a syntax
 # error it can't parse. Isolated runs rely on ignore_missing_imports and are fine.
-# Gradual typing: lenient globally (no disallow_untyped_defs yet), but every module
-# in the `dreams` package is now type-clean — the ignore_errors quarantine is gone.
-# Keep it that way: fix new errors rather than re-adding an overrides block.
-# Next step to tighten: enable disallow_untyped_defs per module.
+# Every module is type-clean — the ignore_errors quarantine is gone. Keep it that
+# way: fix new errors rather than re-adding an overrides block.
+#
+# check_untyped_defs: mypy SKIPS the bodies of unannotated functions by default, and
+# this codebase has ~500 of them — so most of it was never actually being checked.
+# Turning this on analyses those bodies without requiring any annotations, and it
+# immediately found three latent bugs (a TypeError from a duplicate `lr` kwarg in
+# train.py, a call to a non-existent MSData.get_formulas, and the charge_feature
+# breakage). Do not turn it off.
+check_untyped_defs = true
+# Still not enabled: disallow_untyped_defs. That one only *demands* annotations on the
+# ~500 untyped defs; it finds no bugs by itself, so it's low-yield churn. Do it
+# module-by-module if/when the annotations are wanted for their own sake.

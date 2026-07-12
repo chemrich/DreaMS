@@ -13,7 +13,6 @@ from matchms.similarity import ModifiedCosineGreedy
 import matplotlib
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
-import matplotlib.ticker as ticker
 import dreams.utils.misc as utils
 from typing import List, Sequence, Union
 from dreams.utils.misc import get_closest_values, contains_similar
@@ -43,7 +42,7 @@ def parse_raw_peak_list(peak_list: str):
         # Select only m/z, intensity pairs (NIST20 may contain additional annotations)
         pairs = [(peak[0], peak[1]) for peak in rows]
         return np.array(pairs, dtype=float).T
-    except Exception as e:
+    except Exception:
         print(f'Invalid peak list {peak_list}')
 
 

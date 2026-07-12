@@ -13,8 +13,13 @@ import dreams.utils.data as du
 from dreams.utils.io import setup_logger
 from dreams.models.dreams.dreams import DreaMS
 # from dreams.models.vanilla_bert.bert import VanillaBERT
-from dreams.models.heads.heads import *
-from dreams.models.baselines.deep_sets import *
+from dreams.models.heads.heads import (
+    BinClassificationHead, ContrastiveHead, FingerprintHead, IntRegressionHead, RegressionHead,
+)
+from dreams.models.baselines.deep_sets import (
+    DeepSetsPeakBinCls, DeepSetsPeakIntReg, DeepSetsPeakReg, DeepSetsPeaksFingerprint,
+)
+from dreams.definitions import FOLD
 from dreams.training.train_argparse import parse_args
 from dreams.utils.data import ContrastiveSpectraDataset
 import torch
@@ -186,7 +191,7 @@ def main(args):
         #         )
         elif args.model == 'DeepSets':
             if args.train_objective.startswith('fp'):
-                model = DeepSetsPeaksFingerprint(args.train_objective, lr=args.lr)
+                model = DeepSetsPeaksFingerprint(fp_str=args.train_objective, lr=args.lr)
             elif args.train_objective in {'num_C', 'num_O'}:
                 model = DeepSetsPeakIntReg(lr=args.lr)
             elif args.train_objective in {'qed', 'ms2prop_labels'}:

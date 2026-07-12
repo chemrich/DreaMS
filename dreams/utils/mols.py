@@ -154,7 +154,7 @@ def formula_to_dict(formula):
     Transforms chemical formula string to dictionary mapping elements to their frequencies
     e.g. 'C15H24' -> {'C': 15, 'H': 24}
     """
-    elem_count = defaultdict(int)
+    elem_count: defaultdict = defaultdict(int)
     #try:
     formula = formula.replace('+', '').replace('-', '').replace('[', '').replace(']', '')
     formula_counts = ase.formula.Formula(formula)

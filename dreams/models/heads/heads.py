@@ -18,10 +18,11 @@ from dreams.models.baselines.deep_sets import DeepSets
 from dreams.models.layers.feed_forward import FeedForward
 from dreams.models.optimization.losses_metrics import SmoothIoULoss, CosSimLoss, FingerprintMetrics, FocalLoss
 from dreams.utils.annotation import FingerprintInChIRetrieval
-from dreams.definitions import *
 
 
 class FineTuningHead(pl.LightningModule):
+    # Declared, not assigned: every concrete subclass must set it.
+    head: nn.Module
     """
     Base class for fine-tuning heads in the DreaMS model.
 
@@ -68,7 +69,6 @@ class FineTuningHead(pl.LightningModule):
         self.weight_decay = weight_decay
         self.precursor_emb = precursor_emb
         self.unfreeze_backbone_at_epoch = unfreeze_backbone_at_epoch
-        self.head = NotImplementedError('Fine tuning head must be implemented in the child subclass.')
 
     def forward(self, spec, charge=None, no_head=False):
         """

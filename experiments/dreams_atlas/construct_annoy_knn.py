@@ -6,14 +6,10 @@ from annoy import AnnoyIndex
 import logging
 import h5py
 import numpy as np
-import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
 import time
 import io as std_io
-import h5py
-import numpy as np
-from annoy import AnnoyIndex
 from sklearn.metrics.pairwise import cosine_similarity
 
 
@@ -41,8 +37,8 @@ def setup_logger(log_file_path=None, log_name='log'):
 
 
 class TqdmToLogger(std_io.StringIO):
-    logger = None
-    level = None
+    logger: logging.Logger
+    level: int
     buf = ""
 
     def __init__(self, logger, level=None, mininterval=5):
@@ -50,7 +46,7 @@ class TqdmToLogger(std_io.StringIO):
         self.logger = logger
         self.level = level or logging.INFO
         self.mininterval = mininterval
-        self.last_time = 0
+        self.last_time: float = 0
 
     def write(self, buf):
         self.buf = buf.strip("\r\n\t ")

@@ -52,8 +52,8 @@ def setup_logger(log_file_path=None, log_name='log'):
 
 
 class TqdmToLogger(std_io.StringIO):
-    logger = None
-    level = None
+    logger: logging.Logger
+    level: int
     buf = ""
 
     def __init__(self, logger, level=None, mininterval=5):
@@ -61,7 +61,7 @@ class TqdmToLogger(std_io.StringIO):
         self.logger = logger
         self.level = level or logging.INFO
         self.mininterval = mininterval
-        self.last_time = 0
+        self.last_time: float = 0
 
     def write(self, buf):
         self.buf = buf.strip("\r\n\t ")
@@ -84,7 +84,7 @@ def main():
     tqdm_logger = TqdmToLogger(logger)
 
     df_lib = pd.read_pickle(lib_pth)
-    lib_embs = np.stack(df_lib['DreaMS'].values) 
+    lib_embs = np.stack(df_lib['DreaMS'].values)
 
     annoy = AnnoyIndex(lib_embs.shape[1], metric='angular')
     for i, v in tqdm(enumerate(lib_embs), desc=f'Adding {lib_pth.name} DreaMS to annoy index', total=lib_embs.shape[0], file=tqdm_logger):

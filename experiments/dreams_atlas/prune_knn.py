@@ -4,7 +4,7 @@ from scipy.spatial.distance import cosine as cos_dist
 from pathlib import Path
 import msml.utils.data as du
 import msml.utils.io as io
-from msml.definitions import *
+from msml.definitions import DREAMS_EMBEDDING, MERGED_DATASETS
 
 
 def form_clusters(graph, thld, embs, logger):
@@ -16,13 +16,13 @@ def form_clusters(graph, thld, embs, logger):
     # Sort nodes by degree
     degrees = graph.degree()
     vertices = sorted(list(range(graph.vcount())), key=lambda i: degrees[i], reverse=True)
-    
+
     for node in tqdm(vertices, desc='Forming clusters', file=tqdm_logger):
         if node not in visited:
             current_cluster = [node]
             visited.add(node)
             queue = [node]
-            
+
             # Perform BFS from `node`
             while queue:
                 current_node = queue.pop(0)
@@ -34,7 +34,7 @@ def form_clusters(graph, thld, embs, logger):
                     # Do not revisit nodes
                     if neighbor in visited:
                         continue
-                    
+
                     # Go over each neighbour with similairty >= thld and add it to a cluster only if it guaranteed to
                     # transitively have similairty >= thld to cluster representative `node`
                     if graph.es[graph.get_eid(current_node, neighbor)]['weight'] >= thld:
@@ -42,7 +42,7 @@ def form_clusters(graph, thld, embs, logger):
                             visited.add(neighbor)
                             queue.append(neighbor)
                             current_cluster.append(neighbor)
-            
+
             clusters.append(current_cluster)
     return clusters
 
@@ -61,11 +61,11 @@ def main():
     logger.info(f'Loading k-NN from {knn_pth}.')
     knn = du.CSRKNN.from_npz(knn_pth)
     logger.info(f'Loaded {knn.n_nodes} nodes and {knn.n_edges} edges.')
-    
+
     msd_lib = du.MSData(lib_pth)
     msd_gems = du.MSData(gems_pth)
     logger.info(f'Loaded {msd_lib.num_spectra} spectra from the library and {msd_gems.num_spectra} spectra from GeMS.')
-    
+
     logger.info('Loading and concatenating embeddings.')
     embs = np.vstack([
         msd_lib.get_values(DREAMS_EMBEDDING),
@@ -73,7 +73,7 @@ def main():
         # msd_gems.get_values(DREAMS_EMBEDDING, np.arange(msd_gems.num_spectra - knn.n_nodes, msd_gems.num_spectra))
     ])
     logger.info(f'Concatenated embeddings have shape {embs.shape}.')
-    
+
     logger.info('Creating igraph.')
     g = knn.to_igraph(directed=False)
 

@@ -20,8 +20,10 @@ import dreams.utils.spectra as su
 import dreams.utils.dformats as dformats
 import dreams.utils.misc as utils
 from dreams.models.dreams.dreams import DreaMS as DreaMSModel
-from dreams.models.heads.heads import *
-from dreams.definitions import *
+from dreams.models.heads.heads import BinClassificationHead, ContrastiveHead, FineTuningHead
+from dreams.definitions import (
+    CHARGE, DREAMS_EMBEDDING, NAME, PRECURSOR_MZ, PRETRAINED, RT, SCAN_NUMBER, SPECTRUM,
+)
 
 
 class PreTrainedModel:
@@ -174,8 +176,6 @@ def dreams_predictions(
     if logger_pth:
         logger = io.setup_logger(logger_pth)
         tqdm_logger = io.TqdmToLogger(logger)
-    else:
-        write_log = False
 
     # Compute predictions
     model = model_ckpt.model

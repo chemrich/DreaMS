@@ -58,22 +58,56 @@ Install hooks once with `uv tool install pre-commit && pre-commit install`.
 
 ### mypy: the quarantine is gone — keep it that way
 
-`[tool.mypy]` type-checks the **whole** `dreams` package with no `ignore_errors`
-overrides: all 44 files are clean. The old quarantine (13 modules → 0) is fully
-retired. **Do not re-add an overrides block** to silence a new error — fix the
-error. Typing is still otherwise lenient; the next tightening step is
-`disallow_untyped_defs` per module.
+`[tool.mypy]` type-checks the **whole** `dreams` and `experiments` tree (52
+files) with no `ignore_errors` overrides. The old quarantine (13 modules → 0) is
+fully retired. **Do not re-add an overrides block** to silence a new error — fix
+the error.
+
+`check_untyped_defs = true` is ON and must stay on. mypy **skips the bodies of
+unannotated functions by default**, and this codebase has ~500 of them — so
+without this flag most of the code is not actually checked, and "all files clean"
+is illusory. `disallow_untyped_defs` is deliberately **off**: it only *demands*
+506 annotations and finds no bugs by itself.
 
 Get a single module's errors in isolation with:
 `uv tool run mypy@2.2.0 --config-file=/dev/null --ignore-missing-imports --follow-imports=silent <file.py>`.
 
-Clearing the quarantine surfaced four latent bugs that no test caught, all of
-the same shape — **a caller passing a keyword the callee doesn't accept, or a
-`Path` operation on a `str`/`None`**. Worth suspecting elsewhere:
-`IntRegressionHead` (`backbone_pth=` vs `backbone`) and `dreams_attn_scores`
-(`attention_matrices=` vs `compute_attn_matrices`) could *never* be constructed
-or called; `mols.py` used `urllib.request` behind a bare `import urllib`; and
-`DreaMSAtlas(nist20=True)` did `None / str`.
+### ruff: never re-add a wildcard import
+
+`F821` (undefined name) and `F841` (unused local) are enforced. They used to sit
+in the ignore list — not because they were noisy, but because `from x import *`
+defeats ruff's name resolution: with a star import present ruff downgrades every
+unresolvable name to `F405` ("may be undefined"), which **silently disarms
+F821**. The rules were disabled exactly where they mattered. All wildcard imports
+in `dreams/`, `experiments/*.py` and `tutorials/` are gone — do not bring one
+back. (`experiments/**/*.ipynb` are research artifacts and still exempt from
+F403/F405/F821; see `[tool.ruff.lint.per-file-ignores]`.)
+
+`experiments/` and all 38 notebooks are linted. Both were excluded as "not
+library code", which had been hiding a plain syntax error in
+`mol_props/baselines.ipynb`.
+
+### The bug shape this codebase keeps producing
+
+Arming the linters surfaced **nine** latent bugs that no test caught. Almost all
+are one of two shapes — **a caller passing a keyword the callee doesn't accept**,
+or **an operation on a `str`/`None`/wrong-shaped value**. Several were functions
+that could *never* have run:
+
+- `IntRegressionHead` (`backbone_pth=` vs `backbone`) — never constructible.
+- `dreams_attn_scores` (`attention_matrices=` vs `compute_attn_matrices`).
+- `DeepSetsPeaksFingerprint(args.train_objective, lr=...)` — duplicate `lr`.
+- `MSData.get_formulas()` — no such method.
+- **`charge_feature=True` never worked**: `forward()` appended the charge column
+  *before* `__normalize_spec` (which divides by a length-2 tensor), and
+  `get_embeddings()` discarded `charge` and passed `None`.
+- `mols.py` used `urllib.request` behind a bare `import urllib`.
+- `DreaMSAtlas(nist20=True)` did `None / str`.
+- `construct_knn.py` read `embs[i]` after `del embs`.
+
+**Suspect this shape first** when something "has never been run". The cheap guard
+is `tests/test_heads_construction.py`: it builds every head against a stub
+backbone with no weights, in CI.
 
 ## Testing
 
@@ -84,6 +118,38 @@ or called; `mols.py` used `urllib.request` behind a bare `import urllib`; and
   for the flagship `dreams_embeddings` API — run it after any dependency bump.
 - Characterization tests hold **golden values**; a diff means behavior changed
   and must be reviewed, not blindly re-baselined.
+
+### If tests die with `Fatal Python error: Illegal instruction`, check for AVX
+
+torch's official wheels are MKL-backed, and MKL's VML (which implements
+`torch.cos`/`torch.sin`, hit on every forward pass via `FourierFeatures`) emits
+**VEX-encoded AVX instructions**. On a CPU without AVX the process takes an
+illegal-opcode trap and dies with SIGILL (exit 132) — *intermittently*, roughly
+1 run in 5, because MKL's kernel choice depends on buffer alignment.
+
+This is an **environment problem, not a code bug** — CI is green because GitHub
+runners have real AVX2 CPUs. Diagnose with:
+
+```bash
+grep -w avx2 /proc/cpuinfo || echo "no AVX2 — expect SIGILL"
+dmesg | grep 'trap invalid opcode'   # will name libtorch_cpu.so
+```
+
+The usual cause is a VM with an emulated CPU model that masks host features
+(e.g. `QEMU Virtual CPU version 2.5+`). Fix it on the **hypervisor**, not in
+code: set the CPU model to host-passthrough (libvirt/virt-manager: "Copy host
+CPU configuration"; Proxmox: CPU type `host`; QEMU: `-cpu host`). Do not add
+code workarounds for this. Note that AVX2/FMA also make torch far faster, so a
+masked CPU is a large silent performance tax.
+
+**RESOLVED on 2026-07-12** for the dev VM: the Proxmox CPU type was set to `host`,
+and the guest now reports `Intel(R) Core(TM) i7-14700` with `avx`/`avx2`/`fma`
+present. Slow tests then ran **10 consecutive times with zero failures** (the bar
+was 5, since the crash was ~1-in-5 and a single green run proves nothing). Slow
+suite runtime also fell ~18s → ~12.8s, the performance tax coming back.
+
+Nothing to do here unless the symptom returns — on a rebuilt VM or a new machine,
+re-check with the two diagnostic commands above before suspecting DreaMS code.
 
 ## Load-bearing dependency facts (don't regress these)
 

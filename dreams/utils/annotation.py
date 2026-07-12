@@ -10,7 +10,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 from tqdm import tqdm
 tqdm.pandas()
 import dreams.utils.mols as mu
-from dreams.definitions import *
 
 
 class SpectralLibraryRetrieval:
@@ -68,7 +67,7 @@ class SpectralLibraryRetrieval:
         if prec_mz_tolerance and 'PRECURSOR M/Z' not in df.columns:
             raise ValueError('PRECURSOR M/Z column is not present in query DataFrame.')
 
-        res_cols = {
+        res_cols: dict = {
             'Library SMILES': [],
             'Library DreaMS score': [],
             'Library ID': []

@@ -42,7 +42,10 @@ from dreams.utils.dformats import DataFormat
 from dreams.models.layers.feed_forward import FeedForward
 from dreams.models.optimization.losses_metrics import FingerprintMetrics
 from dreams.models.optimization.samplers import MaxVarBatchSampler
-from dreams.definitions import *
+from dreams.definitions import (
+    ADDUCT, CHARGE, DATASET, DREAMS_EMBEDDING, MSDATA_COLUMNS, NAME, PRECURSOR_MZ, RT,
+    SCAN_NUMBER, SMILES, SPECTRUM,
+)
 
 
 class SpectrumPreprocessor:
@@ -182,6 +185,7 @@ class MSData:
             prec_mz_col: str = PRECURSOR_MZ,
             index_col: Optional[str] = None
         ):
+        self.f: Union[io.ChunkedHDF5File, h5py.File]
         if isinstance(hdf5_pth, list):
             self.f = io.ChunkedHDF5File(hdf5_pth)
             self.hdf5_pth = hdf5_pth[0]
@@ -212,14 +216,14 @@ class MSData:
             self.data = self.load_hdf5_in_mem(self.f)
 
         self.index_col = index_col
-        self.index_to_i = None
+        self.index_to_i: Optional[dict] = None
         if index_col is not None:
             self.use_col_as_index(index_col)
 
     def __del__(self):
         try:
             self.f.close()
-        except Exception as e:
+        except Exception:
             return
 
     def columns(self):
@@ -478,6 +482,7 @@ class MSData:
     def at(self, i, plot_mol=True, plot_spec=True, return_spec=False, vals=None, unpad_spec=True):
 
         if self.index_col is not None:
+            assert self.index_to_i is not None  # built whenever index_col is set
             if i not in self.index_to_i:
                 raise ValueError(f'Index {i} is not present in the index.')
             i = self.index_to_i[i]
@@ -490,6 +495,14 @@ class MSData:
         if plot_spec:
             su.plot_spectrum(self.data[SPECTRUM][i], prec_mz=self.data[PRECURSOR_MZ][i])
         if plot_mol and SMILES in self.columns():
+            # `display` is an IPython builtin, not a Python one: this only works in a notebook.
+            # IPython is not a core dependency (see the `notebooks` extra), so import it lazily.
+            try:
+                from IPython.display import display
+            except ImportError as exc:
+                raise RuntimeError(
+                    'plot_mol=True requires IPython; install the `notebooks` extra.'
+                ) from exc
             display(Chem.MolFromSmiles(self.data[SMILES][i]))
         def process_val(v):
             if isinstance(v, bytes):
@@ -525,8 +538,19 @@ class MSData:
     def get_smiles(self, idx=None):
         return self.get_values(SMILES, idx)
 
+    def _writable_f(self) -> h5py.File:
+        """Column writes need a single backing HDF5 file; chunked inputs are read-only."""
+        if not isinstance(self.f, h5py.File):
+            raise TypeError('This MSData is backed by several chunked HDF5 files and is read-only.')
+        return self.f
+
+    def _mem_data(self) -> dict:
+        """In-memory columns live in a plain dict (see `in_mem`)."""
+        assert isinstance(self.data, dict)
+        return self.data
+
     def remove_column(self, name):
-        del self.f[name]
+        del self._writable_f()[name]
 
     def add_column(self, name, data, remove_old_if_exists=False):
         if self.mode != 'a':
@@ -537,18 +561,18 @@ class MSData:
                 self.remove_column(name)
             else:
                 raise ValueError(f'Column "{name}" already exists. Use `remove_old_if_exists=True` to overwrite it.')
-        self.f.create_dataset(name, data=data)
+        self._writable_f().create_dataset(name, data=data)
         if self.in_mem:
-            self.data[name] = self.load_col_in_mem(self.f[name])
+            self._mem_data()[name] = self.load_col_in_mem(self.f[name])
 
     def rename_column(self, old_name, new_name, remove_old_if_exists=False):
         if remove_old_if_exists and new_name in self.columns():
             print(f'Removing column "{new_name}"...')
             self.remove_column(new_name)
-        self.f[new_name] = self.f[old_name]
-        del self.f[old_name]
+        self._writable_f()[new_name] = self.f[old_name]
+        del self._writable_f()[old_name]
         if self.in_mem:
-            self.data[new_name] = self.data.pop(old_name)
+            self._mem_data()[new_name] = self._mem_data().pop(old_name)
 
     def extend_column(self, name, data):
         if data.shape[1:] != self.f[name].shape[1:]:
@@ -909,14 +933,14 @@ class ConcatMSData(MSData):
             else:
                 raise ValueError(f'Column "{name}" already exists.')
         if self.in_mem:
-            self.data[name] = data
+            self._mem_data()[name] = data
         else:
             self._extra_columns[name] = data
 
     def remove_column(self, name):
         if self.in_mem:
-            if name in self.data and name not in self._base_columns:
-                del self.data[name]
+            if name in self._mem_data() and name not in self._base_columns:
+                del self._mem_data()[name]
             else:
                 raise ValueError(f"Cannot remove column '{name}' from ConcatMSData "
                                  f"(only dynamically added columns can be removed).")
@@ -1353,7 +1377,7 @@ class LabeledSpectraDataset(Dataset):
 
         if self.label.startswith('num') or self.label.startswith('has'): # e.g. num_C or has_C
             elem = self.label.split('_')[1]
-            formula = self.msdata.get_formulas(i, to_dict=True)
+            formula = mu.smiles_to_formula(self.msdata.get_smiles(i), as_dict=True)
             if elem not in formula:
                 label = 0.0
             else:
@@ -1793,6 +1817,7 @@ class SpecRetrievalValidation(ImplExplValidation):
         super().__init__(nist_like_pkl_pth, dformat, spec_preproc, df_idx=np.unique(self.df_pairs[['i', 'j']]))
 
     def get_res(self):
+        assert self.model_gains is not None, 'First set embeddings with set_model_gains.'
 
         # Compute cosine similarities of embeddings on the given pairs of spectra
         cos_sims = self.df_pairs.apply(
@@ -2126,7 +2151,7 @@ class SSLProbingValidation(pl.Callback):
                 return labels_pred, labels
 
             fp_metrics = FingerprintMetrics(device=pl_module.device)
-            best_metrics = {}
+            best_metrics: dict = {}
             for epoch in tqdm(range(self.n_epochs), desc='Probing train epoch', disable=True):
 
                 # Train

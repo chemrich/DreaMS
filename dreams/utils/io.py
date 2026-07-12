@@ -29,7 +29,10 @@ import dreams.utils.misc as utils
 import dreams.utils.lcms as lcms
 import dreams.utils.dformats as dformats
 from dreams.algorithms.lsh import BatchedPeakListRandomProjection
-from dreams.definitions import *
+from dreams.definitions import (
+    ADDUCT, CHARGE, FEATURE_ID, FILE_NAME, IONMODE, NAME, PRECURSOR_MZ, RT, SCAN_NUMBER,
+    SMILES, SPECTRUM,
+)
 
 
 def setup_logger(log_file_path=None, log_name='log'):
@@ -56,8 +59,8 @@ def setup_logger(log_file_path=None, log_name='log'):
 
 
 class TqdmToLogger(std_io.StringIO):
-    logger = None
-    level = None
+    logger: logging.Logger
+    level: int
     buf = ""
 
     def __init__(self, logger, level=None, mininterval=5):
@@ -65,7 +68,7 @@ class TqdmToLogger(std_io.StringIO):
         self.logger = logger
         self.level = level or logging.INFO
         self.mininterval = mininterval
-        self.last_time = 0
+        self.last_time: float = 0
 
     def write(self, buf):
         self.buf = buf.strip("\r\n\t ")
@@ -313,7 +316,7 @@ def parse_sirius_ms(spectra_file: str) -> Tuple[dict, List[Tuple[str, np.ndarray
 
 def read_ms(pth, peaks_tag='>ms2peaks', charge_tag='#Charge', prec_mz_tag='#Precursor_MZ'):
     with open(pth, 'r') as f:
-        data = {
+        data: dict = {
             'PARSED PEAKS': [],
             'CHARGE': None,
             'PRECURSOR M/Z': None
@@ -399,7 +402,7 @@ def read_textual_ms_format(
         # Potentially mgf files can start with some metadata before the first spectrum
         if (spectrum_start_line is None and i == 0) or (spectrum_start_line is not None and line.startswith(spectrum_start_line)):
             started_reading_spectra = True
-            spec = {SPECTRUM: [[], []]}
+            spec: dict = {SPECTRUM: [[], []]}
 
         # Skip lines that are not part of the spectrum or comments
         if not started_reading_spectra or any([line.startswith(p) for p in ignore_line_prefixes]):
@@ -664,7 +667,6 @@ def read_mzml(
 
     prev_spectra: dict = {}
     prev_spectrum = None
-    prec_spectra_data: dict = {'peak list': [], 'RT': [], 'scan id': []}
     prec_problems: Counter = Counter()
     ms1_n, msn_n = 0, 0
 
@@ -1134,13 +1136,14 @@ def read_lcmsms(
 
     # Dict mapping ms_level to the last spectrum of this level
     # e.g. {1: pyopenms.Spectrum, 2: pyopenms.Spectrum}
-    prev_spectra = {}
+    prev_spectra: dict = {}
     prev_spectrum = None
-    prec_spectra_data = {'peak list': [], 'RT': [], 'scan id': [], 'ion injection time': []}
+    prec_spectra_data: dict = {'peak list': [], 'RT': [], 'scan id': [], 'ion injection time': []}
 
     ms1_n, msn_n = 0, 0
     spectra_data = []
-    problems, prec_problems = Counter(), Counter()
+    problems: Counter = Counter()
+    prec_problems: Counter = Counter()
     for scan_id, spectrum in enumerate(msdata):
 
         spectrum_data = {}
@@ -1216,6 +1219,7 @@ def read_lcmsms(
                 spectrum_data['positive polarity'] = -1
 
             # > Spectrum type (profile/centroid)
+            assert isinstance(spec_type, lcms.SpecType)  # never None/int for MSExperiment spectra
             spectrum_data['type'] = spec_type.value
             # spectrum_data['type estim'] = lcms.estimate_peak_list_type(peak_list, to_int=True)
 
@@ -2005,10 +2009,10 @@ def sample_hdf(hdf_pth, n_samples, out_pth=None, seed=333, compression='gzip', c
 
     with h5py.File(hdf_pth, 'r') as f:
 
-        dataset_len = set(len(f[k]) for k in f.keys())
-        if len(dataset_len) != 1:
+        dataset_lens = set(len(f[k]) for k in f.keys())
+        if len(dataset_lens) != 1:
             raise ValueError("Not all datasets have the same length")
-        dataset_len = dataset_len.pop()
+        dataset_len = dataset_lens.pop()
 
         if n_samples > dataset_len:
             raise ValueError(f"Cannot sample {n_samples} samples from a dataset of length {dataset_len}")
@@ -2041,7 +2045,7 @@ class ChunkedHDF5File:
         - file_paths (list of Path): Paths to the HDF5 files.
         """
         self.file_paths = sorted(file_paths)
-        self.files = [h5py.File(p, 'r') for p in self.file_paths]
+        self.files: Optional[List[h5py.File]] = [h5py.File(p, 'r') for p in self.file_paths]
         self.datasets = list(self.files[0].keys())
 
         # Assume all datasets have the same length along the first dimension
