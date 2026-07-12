@@ -103,15 +103,15 @@ def save_fig(name, dir=FIGURES, dpi=None, transparent=True):
 def plot_nx_graph(
         G: nx.Graph,
         node_attrs: list = [],
-        special_node: int = None,
+        special_node: T.Optional[int] = None,
         special_nodes: list = [],
-        pos: dict = None,
-        node_color_attr: str = None,
+        pos: T.Optional[dict] = None,
+        node_color_attr: T.Optional[str] = None,
         node_size: int = 10,
         edge_color: str = 'black',
         edge_width: int = 2,
-        title: str = None,
-        html_pth: T.Union[Path, str] = None
+        title: T.Optional[str] = None,
+        html_pth: T.Optional[T.Union[Path, str]] = None
     ) -> None:
     """
     Plots a NetworkX graph using Plotly, with options to customize node attributes and highlight special nodes.
@@ -171,15 +171,20 @@ def plot_nx_graph(
     node_x = []
     node_y = []
     node_text = []
-    node_color = []
     special_node_x = []
     special_node_y = []
     special_node_text = []
-    special_node_color = []
     triangle_node_x = []
     triangle_node_y = []
     triangle_node_text = []
-    triangle_node_color = []
+
+    # Rebound below to lists, numpy arrays or None depending on the colouring mode; plotly accepts all of them.
+    node_color: T.Any = []
+    special_node_color: T.Any = []
+    triangle_node_color: T.Any = []
+    color_scale: T.Any = None
+    showscale: bool = False
+    colorbar: T.Any = None
 
     for node in G.nodes(data=True):
         x, y = pos[node[0]]
