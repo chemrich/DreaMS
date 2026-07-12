@@ -38,13 +38,24 @@ uv tool run mypy@2.2.0             # NOT `uv run mypy`
 
 Install hooks once with `uv tool install pre-commit && pre-commit install`.
 
-### mypy is gradual-typing with a quarantine
+### mypy: the quarantine is gone — keep it that way
 
-`[tool.mypy]` type-checks the whole `dreams` package except a shrinking
-`ignore_errors` quarantine list of legacy modules (see the overrides block).
-"Making progress" = fixing a quarantined module's errors and removing it from
-the list. Get a module's real errors with:
+`[tool.mypy]` type-checks the **whole** `dreams` package with no `ignore_errors`
+overrides: all 44 files are clean. The old quarantine (13 modules → 0) is fully
+retired. **Do not re-add an overrides block** to silence a new error — fix the
+error. Typing is still otherwise lenient; the next tightening step is
+`disallow_untyped_defs` per module.
+
+Get a single module's errors in isolation with:
 `uv tool run mypy@2.2.0 --config-file=/dev/null --ignore-missing-imports --follow-imports=silent <file.py>`.
+
+Clearing the quarantine surfaced four latent bugs that no test caught, all of
+the same shape — **a caller passing a keyword the callee doesn't accept, or a
+`Path` operation on a `str`/`None`**. Worth suspecting elsewhere:
+`IntRegressionHead` (`backbone_pth=` vs `backbone`) and `dreams_attn_scores`
+(`attention_matrices=` vs `compute_attn_matrices`) could *never* be constructed
+or called; `mols.py` used `urllib.request` behind a bare `import urllib`; and
+`DreaMSAtlas(nist20=True)` did `None / str`.
 
 ## Testing
 
