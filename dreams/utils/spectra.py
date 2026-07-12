@@ -15,7 +15,7 @@ import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 import matplotlib.ticker as ticker
 import dreams.utils.misc as utils
-from typing import List, Union
+from typing import List, Sequence, Union
 from dreams.utils.misc import get_closest_values, contains_similar
 from dreams.utils.mols import mol_to_formula, formula_to_dict
 from dreams.utils.plots import init_plotting, save_fig, get_nature_hex_colors
@@ -39,12 +39,10 @@ def parse_raw_peak_list(peak_list: str):
     e.g. '53.0379 0.894101\n54.0335 0.661867\n' -> ([53.0379, 54.0335], [0.894101, 0.661867])
     """
     try:
-        peak_list = [peak.split(' ') for peak in peak_list.split('\n')]
+        rows = [peak.split(' ') for peak in peak_list.split('\n')]
         # Select only m/z, intensity pairs (NIST20 may contain additional annotations)
-        peak_list = [(peak[0], peak[1]) for peak in peak_list]
-        peak_list = np.array(peak_list, dtype=float)
-        peak_list = peak_list.T
-        return peak_list
+        pairs = [(peak[0], peak[1]) for peak in rows]
+        return np.array(pairs, dtype=float).T
     except Exception as e:
         print(f'Invalid peak list {peak_list}')
 
@@ -649,7 +647,7 @@ def to_classes(
     vals: torch.Tensor,
     max_val: float,
     bin_size: float,
-    special_vals: List[float] = (),
+    special_vals: Sequence[float] = (),
     return_num_classes: bool = False
 ) -> torch.Tensor:
     """ Assumes that last dimension of mzs is singleton. """

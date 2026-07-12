@@ -1,5 +1,6 @@
 import pandas as pd
 from enum import Enum, auto, unique
+from typing import Optional, Union
 import statistics as stats
 import numpy as np
 import contextlib
@@ -346,7 +347,7 @@ def get_pwiz_stats(msdata):
     return pwiz_stats
 
 
-def get_spectrum_type(spec: pyms.MSSpectrum, to_int=False) -> SpecType:
+def get_spectrum_type(spec: pyms.MSSpectrum, to_int=False) -> Optional[Union[SpecType, int]]:
 
     if spec is None:
         return None

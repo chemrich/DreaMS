@@ -3,7 +3,7 @@ import pandas as pd
 import rdkit.Chem as Chem
 # from FPSim2 import FPSim2Engine  # NOTE: installed from local fork
 from pathlib import Path
-from typing import List, Union
+from typing import List, Optional, Union
 from collections import Counter
 
 from sklearn.metrics.pairwise import cosine_similarity
@@ -19,10 +19,12 @@ class SpectralLibraryRetrieval:
             df_lib: Union[Path, pd.DataFrame],
             # df_query: Union[Path, pd.DataFrame]
     ):
+        # Load from disk first if a path was given, then reset_index — the reverse
+        # order crashed for Path inputs (Path has no .reset_index).
+        if isinstance(df_lib, Path):
+            df_lib = pd.read_pickle(df_lib)
         self.df_lib = df_lib.reset_index()
         # self.df_query = df_query
-        if isinstance(self.df_lib, Path):
-            self.df_lib = pd.read_pickle(self.df_lib)
         # if isinstance(self.df_query, Path):
         #     self.df_query = pd.read_pickle(self.df_query)
 
@@ -104,7 +106,7 @@ class FingerprintInChIRetrieval:
             fp_name: str,
             top_k: Union[int, List[int]],
             index_smiles_col: str = 'SMILES',
-            candidate_inchi14_col: str = None
+            candidate_inchi14_col: Optional[str] = None
     ):
         self.df = pd.read_pickle(df_pkl_pth)
         for c in [index_smiles_col, candidate_smiles_col]:

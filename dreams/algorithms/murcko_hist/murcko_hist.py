@@ -4,6 +4,12 @@ from rdkit import Chem
 from rdkit.Chem.rdchem import Mol
 from typing import List, Set, Dict, Union, Tuple
 
+try:
+    # IPython's rich display, used only when show_mol_scaffold=True (notebooks).
+    from IPython.display import display
+except ImportError:  # pragma: no cover - optional notebook dependency
+    display = None
+
 
 def multirings(mol: Mol) -> List[Set[int]]:
     """
@@ -57,6 +63,7 @@ def break_rings(mol: Mol, rings_size: int = 3) -> Mol:
         for ring in mol.GetRingInfo().BondRings():
             if len(ring) == size:
                 return list(set(ring))
+        return None
     while (ring := get_ring(mol, size=rings_size)) is not None:
         bonds = mol.GetRingInfo().BondRings()
         degrees = [sum([atom in bond for bond in bonds])

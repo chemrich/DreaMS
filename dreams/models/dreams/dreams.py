@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 from tqdm import tqdm
 from torchmetrics.functional import pairwise_cosine_similarity
-from typing import Dict
+from typing import Any, Dict, Optional
 from dreams.models.layers.fourier_features import FourierFeatures
 from dreams.models.layers.feed_forward import FeedForward
 import dreams.utils.spectra as su
@@ -97,6 +97,7 @@ class DreaMS(pl.LightningModule):
             self.transformer_encoder = TransformerEncoder(args)
 
         # Output position-wise feed forward
+        self.ff_out: Optional[FeedForward]
         if self.train_objective.endswith('hot'):
             # (batch_size, peaks_n, d_model) -> (batch_size, peaks_n, num_one_hot_bins)
             self.ff_out = FeedForward(in_dim=self.d_model, hidden_dim=self.d_model, depth=args.ff_out_depth, act_last=False,
@@ -500,7 +501,7 @@ def get_embeddings(model: DreaMS, data: Dict, batch_size=None, tqdm_batches=Fals
         layers_idx = [model.n_layers - 1]
 
     # Define hooks extracting intermediate representations
-    embeddings = {}
+    embeddings: Dict[str, Any] = {}
     def get_embeddings_hook(name):
         def hook(model, input, output):
             embs = output.detach()
