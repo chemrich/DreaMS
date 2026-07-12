@@ -67,8 +67,12 @@ dev = [
     "pre-commit>=3.7",
     "pytest>=8.2.1",
     "pytest-cov>=5.0.0",
-    "Cython>=3.0.9",         # build-time dep for the SpectralEntropy git package below
-    "SpectralEntropy @ git+https://github.com/YuanyueLi/SpectralEntropy@a1151cfcd9adc66e46f95fb3b06a660e1b0c9b56#egg=SpectralEntropy",
+    # SpectralEntropy (and its Cython build dep) removed: the library no longer
+    # uses it — the only call site in dreams/utils/data.py is dead code after a
+    # `raise NotImplementedError(...)`, and its upstream setup.py fails to build
+    # under pip build isolation (no pyproject.toml declaring Cython/numpy).
+    # Only 2 experiment notebooks still reference it; add it to a `notebooks`-style
+    # extra (via a forked pyproject-fixed build) if those need to run.
 ]
 notebooks = [
     "jupyter>=1.0.0",
