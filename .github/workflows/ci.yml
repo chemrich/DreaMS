@@ -34,7 +34,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        # Linux-only project — see [tool.uv] environments in pyproject.toml.
+        os: [ubuntu-latest]
         python-version: ["3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
@@ -43,9 +44,8 @@ jobs:
         with:
           enable-cache: true
 
-      # Exact, locked env from uv.lock. torch resolves to the CPU build on Linux
-      # via [tool.uv.sources] (no CUDA cp314 wheel exists); macOS uses its PyPI
-      # CPU/MPS wheel. --locked fails if the lock is stale vs pyproject.toml.
+      # Exact, locked env from uv.lock. torch resolves to the CPU build from the
+      # PyTorch index (see [tool.uv.sources]). --locked fails if the lock is stale.
       - name: Sync (locked)
         run: uv sync --locked --extra dev --python ${{ matrix.python-version }}
 

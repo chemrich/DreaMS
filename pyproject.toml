@@ -99,18 +99,22 @@ include = ["dreams*"]
 # uv is the package manager for this project (see README). `uv sync` installs
 # from the committed uv.lock for byte-reproducible environments; `uv run ...`
 # executes inside that env.
+#
+# This project targets modern Linux ONLY (it never runs on macOS). Resolution is
+# pinned to Linux so the lock is single-platform and reproducible; `uv sync` will
+# not work on macOS/Windows by design. For GPU/CUDA, see the `gpu-cuda` branch.
+[tool.uv]
+environments = ["sys_platform == 'linux'"]
+
 [[tool.uv.index]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
 explicit = true
 
 [tool.uv.sources]
-# On Linux, PyPI's torch is the multi-GB CUDA build and there is no CUDA cp314
-# wheel yet — pull the CPU build from PyTorch's index. macOS uses its normal
-# PyPI wheel (CPU/MPS). Keep in sync with requires-python.
-torch = [
-    { index = "pytorch-cpu", marker = "sys_platform == 'linux'" },
-]
+# PyPI's Linux torch is the multi-GB CUDA build; pull the smaller CPU build from
+# PyTorch's index. (GPU training uses the cu126 index on the gpu-cuda branch.)
+torch = [{ index = "pytorch-cpu" }]
 
 [tool.ruff]
 line-length = 100
