@@ -11,10 +11,11 @@ license = "MIT"
 authors = [{ name = "DreaMS developers" }]
 requires-python = ">=3.13"
 classifiers = [
+    # NB: no `License ::` classifier — superseded by the SPDX `license` field above
+    # under PEP 639 (setuptools>=77 rejects having both).
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 
