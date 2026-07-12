@@ -1,9 +1,9 @@
-# Install once:  pip install pre-commit && pre-commit install
-# Run on demand: pre-commit run --all-files
-# Bump pins:     pre-commit autoupdate
+# Install once:  uv tool install pre-commit   (then: pre-commit install)
+# Run on demand: uvx pre-commit run --all-files
+# Bump pins:     uvx pre-commit autoupdate
 #
 # ruff/ruff-format use the config in pyproject.toml [tool.ruff]; mypy uses
-# [tool.mypy]. Keep these revs in sync with the `dev` extra in pyproject.toml.
+# [tool.mypy]. Keep versions in sync with .github/workflows/ci.yml.
 
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -16,14 +16,18 @@ repos:
       # this is how the deferred `ruff format` rolls out incrementally.
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.2.0
+  # mypy as a local uv hook so it runs byte-identically to CI (`uv tool run
+  # mypy@2.2.0`) — isolated from the project's deps, which is required (a full
+  # env would load rdkit's broken bundled stubs). Checks the whole `dreams`
+  # package via [tool.mypy] rather than just staged files.
+  - repo: local
     hooks:
       - id: mypy
-        # Check the whole `dreams` package via [tool.mypy] (files + overrides),
-        # not just staged files — needed for follow_imports and the quarantine
-        # list to behave correctly.
+        name: mypy
+        entry: uv tool run mypy@2.2.0
+        language: system
         pass_filenames: false
+        always_run: true
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0

@@ -15,18 +15,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v6
         with:
-          python-version: "3.13"
-      - run: pip install "ruff>=0.6" "mypy>=1.11"
+          enable-cache: true
+      # ruff and mypy run as isolated tools (`uv tool run`), i.e. WITHOUT the
+      # project's dependencies. mypy relies on this: a full env would make it load
+      # rdkit's broken bundled stubs. Versions match .pre-commit-config.yaml.
       - name: Ruff lint
-        run: ruff check .
+        run: uv tool run ruff@0.15.21 check .
       # `ruff format --check` is intentionally deferred: applying it repo-wide is a
       # large mechanical diff that belongs in its own PR. Add it here once done.
       - name: Mypy
-        # Same gradual-typing config as the pre-commit mypy hook ([tool.mypy]);
-        # legacy modules are quarantined, so this is green today.
-        run: mypy
+        run: uv tool run mypy@2.2.0
 
   test:
     name: test (py${{ matrix.python-version }} / ${{ matrix.os }})
@@ -39,21 +39,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v6
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: pip
+          enable-cache: true
 
-      # Install CPU-only torch first. The default PyPI torch wheel on Linux is a
-      # multi-GB CUDA build, and no CUDA cp314 wheel exists yet — the CPU index is
-      # both leaner and the only thing that resolves on 3.14. This pre-seeds the
-      # resolver so the `pip install .[dev]` below reuses it instead of pulling CUDA.
-      - name: Install CPU torch
-        run: pip install "torch>=2.9" --index-url https://download.pytorch.org/whl/cpu
-
-      - name: Install package (with dev extras)
-        run: pip install -e ".[dev]"
+      # Exact, locked env from uv.lock. torch resolves to the CPU build on Linux
+      # via [tool.uv.sources] (no CUDA cp314 wheel exists); macOS uses its PyPI
+      # CPU/MPS wheel. --locked fails if the lock is stale vs pyproject.toml.
+      - name: Sync (locked)
+        run: uv sync --locked --extra dev --python ${{ matrix.python-version }}
 
       - name: Run tests
         # Skip `slow` tests (they download model weights / datasets from HF).
-        run: pytest -m "not slow" --cov --cov-report=term-missing
+        run: uv run pytest -m "not slow" --cov --cov-report=term-missing

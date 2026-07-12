@@ -87,11 +87,29 @@ docs = [
     "sphinx-rtd-theme>=2.0.0",
     "nbsphinx>=0.9.4",
     "m2r2>=0.3.3.post2",
+    "mistune<0.9",            # m2r2 uses the mistune 0.8.x API (was pinned ==0.8.4)
     "lxml_html_clean>=0.2.2",
 ]
 
 [tool.setuptools.packages.find]
 include = ["dreams*"]
+
+# --- uv -------------------------------------------------------------------- #
+# uv is the package manager for this project (see README). `uv sync` installs
+# from the committed uv.lock for byte-reproducible environments; `uv run ...`
+# executes inside that env.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+# On Linux, PyPI's torch is the multi-GB CUDA build and there is no CUDA cp314
+# wheel yet — pull the CPU build from PyTorch's index. macOS uses its normal
+# PyPI wheel (CPU/MPS). Keep in sync with requires-python.
+torch = [
+    { index = "pytorch-cpu", marker = "sys_platform == 'linux'" },
+]
 
 [tool.ruff]
 line-length = 100
@@ -140,6 +158,10 @@ exclude = '(^|/)(experiments|tutorials|docs)/'
 ignore_missing_imports = true
 # Only report errors in the file being checked, not in untyped modules it imports.
 follow_imports = "silent"
+# NOTE: run mypy ISOLATED — the pre-commit hook and CI both use
+# `uv tool run mypy@2.2.0`, i.e. no project deps installed. A full env
+# (`uv run mypy`) makes mypy load rdkit's bundled stubs, which contain a syntax
+# error it can't parse. Isolated runs rely on ignore_missing_imports and are fine.
 # Gradual typing: lenient globally now; tighten (disallow_untyped_defs, etc.) per
 # module as it gets typed. 18 of 31 modules are already clean under this config.
 
