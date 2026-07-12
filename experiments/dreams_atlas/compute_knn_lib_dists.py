@@ -15,7 +15,7 @@ import msml.utils.spectra as su
 import msml.utils.mols as mu
 import msml.utils.io as io
 import msml.utils.plots as plots
-from msml.definitions import *
+from msml.definitions import PRECURSOR_MZ, SPECTRUM
 
 
 def main():

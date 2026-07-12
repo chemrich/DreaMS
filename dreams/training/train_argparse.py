@@ -1,6 +1,5 @@
 import argparse
 from pathlib import Path
-from dreams.definitions import *
 from dreams.utils.dformats import DataFormatBuilder
 
 

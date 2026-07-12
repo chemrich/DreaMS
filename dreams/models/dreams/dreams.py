@@ -139,15 +139,21 @@ class DreaMS(pl.LightningModule):
         # Generate padding mask
         padding_mask = spec[:, :, 0] == 0
 
-        # Append charge to each token
+        # Lift peaks to d_peak (m/z's are normalized).
+        # NB: normalize BEFORE appending charge. __normalize_spec divides by a length-2
+        # tensor ([max_mz, 1.]), so it only accepts the (m/z, intensity) columns — and a
+        # charge should not be scaled by max_mz anyway. `ff_peak` is built with
+        # in_dim=token_dim, which is 3 exactly when charge_feature is set.
+        # Kept in a separate local: `spec` itself must stay un-normalized, because the
+        # Fourier encoding below reads raw m/z from spec[..., [0]].
+        peak_input = self.__normalize_spec(spec)
         if self.charge_feature:
             if charge is None:
-                raise ValueError
+                raise ValueError('charge is required when the model is built with charge_feature=True')
             charge_features = ~padding_mask * charge.unsqueeze(-1)
-            spec = torch.cat([spec, charge_features.unsqueeze(-1)], dim=-1)
+            peak_input = torch.cat([peak_input, charge_features.unsqueeze(-1)], dim=-1)
 
-        # Lift peaks to d_peak (m/z's are normalized)
-        peak_embs = self.ff_peak(self.__normalize_spec(spec))
+        peak_embs = self.ff_peak(peak_input)
 
         # ms2prop variant
         # peak_embs = spec[:, :, 1].unsqueeze(-1)
@@ -520,7 +526,7 @@ def get_embeddings(model: DreaMS, data: Dict, batch_size=None, tqdm_batches=Fals
     idx_batches = list(range(0, spec.shape[0], batch_size))
     for i in tqdm(idx_batches, desc='Computing DreaMS', disable=not tqdm_batches):
         with torch.inference_mode():
-            _ = model(spec[i:i+batch_size], None)
+            _ = model(spec[i:i+batch_size], charge[i:i+batch_size])
 
     # Remove hooks
     for h in hook_handles:

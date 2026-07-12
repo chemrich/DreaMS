@@ -42,7 +42,10 @@ from dreams.utils.dformats import DataFormat
 from dreams.models.layers.feed_forward import FeedForward
 from dreams.models.optimization.losses_metrics import FingerprintMetrics
 from dreams.models.optimization.samplers import MaxVarBatchSampler
-from dreams.definitions import *
+from dreams.definitions import (
+    ADDUCT, CHARGE, DATASET, DREAMS_EMBEDDING, MSDATA_COLUMNS, NAME, PRECURSOR_MZ, RT,
+    SCAN_NUMBER, SMILES, SPECTRUM,
+)
 
 
 class SpectrumPreprocessor:
@@ -219,7 +222,7 @@ class MSData:
     def __del__(self):
         try:
             self.f.close()
-        except Exception as e:
+        except Exception:
             return
 
     def columns(self):
@@ -490,6 +493,14 @@ class MSData:
         if plot_spec:
             su.plot_spectrum(self.data[SPECTRUM][i], prec_mz=self.data[PRECURSOR_MZ][i])
         if plot_mol and SMILES in self.columns():
+            # `display` is an IPython builtin, not a Python one: this only works in a notebook.
+            # IPython is not a core dependency (see the `notebooks` extra), so import it lazily.
+            try:
+                from IPython.display import display
+            except ImportError as exc:
+                raise RuntimeError(
+                    'plot_mol=True requires IPython; install the `notebooks` extra.'
+                ) from exc
             display(Chem.MolFromSmiles(self.data[SMILES][i]))
         def process_val(v):
             if isinstance(v, bytes):

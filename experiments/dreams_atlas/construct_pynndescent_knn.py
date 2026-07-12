@@ -4,7 +4,7 @@ import pynndescent
 from pathlib import Path
 from msml.utils.io import setup_logger
 from msml.utils.data import CSRKNN
-from msml.definitions import *
+from msml.definitions import DREAMS_EMBEDDING
 
 
 def main():

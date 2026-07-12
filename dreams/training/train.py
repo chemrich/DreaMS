@@ -13,8 +13,13 @@ import dreams.utils.data as du
 from dreams.utils.io import setup_logger
 from dreams.models.dreams.dreams import DreaMS
 # from dreams.models.vanilla_bert.bert import VanillaBERT
-from dreams.models.heads.heads import *
-from dreams.models.baselines.deep_sets import *
+from dreams.models.heads.heads import (
+    BinClassificationHead, ContrastiveHead, FingerprintHead, IntRegressionHead, RegressionHead,
+)
+from dreams.models.baselines.deep_sets import (
+    DeepSetsPeakBinCls, DeepSetsPeakIntReg, DeepSetsPeakReg, DeepSetsPeaksFingerprint,
+)
+from dreams.definitions import FOLD
 from dreams.training.train_argparse import parse_args
 from dreams.utils.data import ContrastiveSpectraDataset
 import torch

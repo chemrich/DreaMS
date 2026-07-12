@@ -29,7 +29,10 @@ import dreams.utils.misc as utils
 import dreams.utils.lcms as lcms
 import dreams.utils.dformats as dformats
 from dreams.algorithms.lsh import BatchedPeakListRandomProjection
-from dreams.definitions import *
+from dreams.definitions import (
+    ADDUCT, CHARGE, FEATURE_ID, FILE_NAME, IONMODE, NAME, PRECURSOR_MZ, RT, SCAN_NUMBER,
+    SMILES, SPECTRUM,
+)
 
 
 def setup_logger(log_file_path=None, log_name='log'):
@@ -664,7 +667,6 @@ def read_mzml(
 
     prev_spectra: dict = {}
     prev_spectrum = None
-    prec_spectra_data: dict = {'peak list': [], 'RT': [], 'scan id': []}
     prec_problems: Counter = Counter()
     ms1_n, msn_n = 0, 0
 

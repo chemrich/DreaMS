@@ -4,7 +4,7 @@ from scipy.spatial.distance import cosine as cos_dist
 from pathlib import Path
 import msml.utils.data as du
 import msml.utils.io as io
-from msml.definitions import *
+from msml.definitions import DREAMS_EMBEDDING, MERGED_DATASETS
 
 
 def form_clusters(graph, thld, embs, logger):

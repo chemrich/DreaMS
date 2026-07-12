@@ -18,7 +18,6 @@ from dreams.models.baselines.deep_sets import DeepSets
 from dreams.models.layers.feed_forward import FeedForward
 from dreams.models.optimization.losses_metrics import SmoothIoULoss, CosSimLoss, FingerprintMetrics, FocalLoss
 from dreams.utils.annotation import FingerprintInChIRetrieval
-from dreams.definitions import *
 
 
 class FineTuningHead(pl.LightningModule):

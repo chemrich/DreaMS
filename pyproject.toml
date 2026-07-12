@@ -127,9 +127,11 @@ extend-exclude = ["experiments", "tutorials", "docs", "*.ipynb"]
 # Start lenient so lint can be turned on in CI without a huge upfront cleanup;
 # tighten (add "I" import-sort, "UP" pyupgrade, "B" bugbear) as the codebase is modernized.
 select = ["E", "F", "W"]
-# Enforced now (all mechanically fixable): F401 unused imports, F541 empty
-# f-strings, W29x whitespace. Ignored below are structural/legacy-debt rules that
-# need manual refactoring — tracked as Phase 2 cleanup, not day-one blockers:
+# F821 (undefined name) and F841 (unused local) are the rules that mechanically
+# catch the bug class this codebase actually suffers from. They were only ever
+# ignored because `import *` defeated ruff's name resolution; the wildcards are
+# gone, so both are enforced. F403/F405/F811 are likewise obsolete. Do not
+# re-add a wildcard import — it would silently disarm F821 again.
 ignore = [
     "E501",  # line too long
     "E402",  # import not at top — the deliberate `warnings.filterwarnings` prelude in api.py
@@ -137,11 +139,6 @@ ignore = [
     "E713",  # `not ... in` test
     "E721",  # type comparison with `==`
     "E741",  # ambiguous var name (e.g. `l`)
-    "F403",  # `import *`
-    "F405",  # name may be from `import *`
-    "F811",  # redefinition (mostly wildcard-import shadowing)
-    "F821",  # undefined name (ruff can't resolve wildcard-imported names)
-    "F841",  # unused local variable
 ]
 
 [tool.pytest.ini_options]

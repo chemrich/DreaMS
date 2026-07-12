@@ -6,7 +6,7 @@ from scipy.spatial.distance import cosine as cos_dist
 from tqdm import tqdm
 import msml.utils.io as io
 from msml.utils.data import CSRKNN
-from msml.definitions import *
+from msml.definitions import DREAMS_EMBEDDING
 
 
 def form_clusters(graph, thld, embs, logger):

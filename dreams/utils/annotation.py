@@ -10,7 +10,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 from tqdm import tqdm
 tqdm.pandas()
 import dreams.utils.mols as mu
-from dreams.definitions import *
 
 
 class SpectralLibraryRetrieval:

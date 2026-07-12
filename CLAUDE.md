@@ -85,6 +85,29 @@ or called; `mols.py` used `urllib.request` behind a bare `import urllib`; and
 - Characterization tests hold **golden values**; a diff means behavior changed
   and must be reviewed, not blindly re-baselined.
 
+### If tests die with `Fatal Python error: Illegal instruction`, check for AVX
+
+torch's official wheels are MKL-backed, and MKL's VML (which implements
+`torch.cos`/`torch.sin`, hit on every forward pass via `FourierFeatures`) emits
+**VEX-encoded AVX instructions**. On a CPU without AVX the process takes an
+illegal-opcode trap and dies with SIGILL (exit 132) — *intermittently*, roughly
+1 run in 5, because MKL's kernel choice depends on buffer alignment.
+
+This is an **environment problem, not a code bug** — CI is green because GitHub
+runners have real AVX2 CPUs. Diagnose with:
+
+```bash
+grep -w avx2 /proc/cpuinfo || echo "no AVX2 — expect SIGILL"
+dmesg | grep 'trap invalid opcode'   # will name libtorch_cpu.so
+```
+
+The usual cause is a VM with an emulated CPU model that masks host features
+(e.g. `QEMU Virtual CPU version 2.5+`). Fix it on the **hypervisor**, not in
+code: set the CPU model to host-passthrough (libvirt/virt-manager: "Copy host
+CPU configuration"; Proxmox: CPU type `host`; QEMU: `-cpu host`). Do not add
+code workarounds for this. Note that AVX2/FMA also make torch far faster, so a
+masked CPU is a large silent performance tax.
+
 ## Load-bearing dependency facts (don't regress these)
 
 - **`msml`** git dep points to our fork
