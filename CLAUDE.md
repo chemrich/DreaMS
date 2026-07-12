@@ -43,6 +43,28 @@ uv lock                    # re-resolve after editing deps; commit uv.lock
 Python 3.13/3.14 are the targets — uv downloads the interpreter itself, so the
 system Python (Mint ships 3.10/3.12) is irrelevant; don't use it.
 
+### The dev venv is pinned to 3.13 — leave `.python-version` alone
+
+`requires-python = ">=3.13"` and CI tests **3.13 and 3.14**, so both are supported.
+But `.python-version` pins the **local venv to 3.13**, and that pin is load-bearing.
+Delete it and uv silently grabs the newest interpreter on the box — which is how the
+dev env drifted onto 3.14 with nobody choosing it.
+
+3.14 is fine for the whole core stack (torch, numpy, scipy, rdkit, pandas, h5py,
+numba all ship cp314 wheels). It breaks exactly one thing: **`ngt`** (import name
+`ngtpy`), the ANN backend of `experiments/dreams_atlas/construct_knn.py`, which ships
+**no cp314 wheel and no sdist** — uninstallable, with no source fallback. Pinning to
+3.13 keeps it installable, so `tests/test_construct_knn.py` actually runs instead of
+skipping forever.
+
+`ngt` is therefore in the `dev` extra behind `python_version < '3.14'`. **Keep the
+marker**: unguarded, it makes `uv sync` fail outright on 3.14 and takes CI's 3.14 job
+with it.
+
+Do **not** lower `requires-python` to 3.12. The full dep set does resolve there, but
+it buys nothing — ngt supports 3.12 and 3.13 equally, and no other dep cares. It would
+only widen the support matrix for free.
+
 ## Linting & type-checking: run ISOLATED
 
 ruff and mypy must run as **isolated tools** (no project deps installed),

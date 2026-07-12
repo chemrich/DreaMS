@@ -1,11 +1,12 @@
 """k-NN graph construction for the DreaMS Atlas (experiments/dreams_atlas/construct_knn.py).
 
-SKIPPED in CI, and that is expected: `ngt` publishes no cp314 wheel and no sdist, so it
-cannot be installed on this project's Python (>=3.13, venv is 3.14). It is also not a
-declared dependency — the script only ever ran on the authors' HPC cluster. The test still
-earns its place: it runs for anyone who does have ngt (py<=3.13), and it pins the bug that
-made this script silently wrong, namely that `ngt_index.get_object(i)` returns corrupt
-vectors on an object_type='Float16' index.
+Runs on Python 3.13 (the pinned dev env, and CI's 3.13 job), where `ngt` is installed via
+the marker-gated dev extra. Self-skips on 3.14, where ngt is genuinely uninstallable: it
+publishes no cp314 wheel and no sdist, so there is nothing to install and nothing to build.
+
+Pins the bug that made this script silently wrong — `ngt_index.get_object(i)` returns
+corrupt vectors on an object_type='Float16' index — so a future ngt fix surfaces here
+rather than letting the workaround quietly outlive its reason.
 """
 import importlib.util
 import logging
@@ -16,7 +17,7 @@ import h5py
 import numpy as np
 import pytest
 
-ngtpy = pytest.importorskip("ngtpy", reason="ngt has no cp314 wheel; not a project dep")
+ngtpy = pytest.importorskip("ngtpy", reason="ngt ships no cp314 wheel and no sdist (py3.14)")
 
 D, K = 16, 3
 N_LIB, N_CHUNKS, N_PER_CHUNK = 12, 3, 8
