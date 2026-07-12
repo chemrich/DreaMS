@@ -6,20 +6,20 @@
 #SBATCH --gpus 8
 #SBATCH --time 10:00:00
 
-# Activate conda environment
-eval "$(conda shell.bash hook)"
-conda activate dreams
+# Run inside the uv-managed environment (create it with `uv sync`).
+# `uv run` (below) executes each command in the project's .venv — no activation needed.
 
 # Export project definitions
-$(python -c "from dreams.definitions import export; export()")
+$(uv run python -c "from dreams.definitions import export; export()")
 
 # Move to running dir
 cd "${DREAMS_DIR}" || exit 3
 
 # Run the training script
-# Replace `python3 training/train.py` with `srun --export=ALL --preserve-env python3 training/train.py \`
+# Replace `uv run python3 training/train.py` with
+# `srun --export=ALL --preserve-env uv run python3 training/train.py \`
 # when executing on a SLURM cluster via `sbatch`.
-python3 training/train.py \
+uv run python3 training/train.py \
  --project_name MolecularProperties \
  --job_key "my_run_name" \
  --run_name "my_run_name" \

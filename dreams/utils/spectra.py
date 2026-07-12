@@ -7,14 +7,15 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import rdkit.Chem.Descriptors as rdkitDescriptors
 from matchms import Spectrum
-from matchms.similarity import ModifiedCosine
+# matchms >=0.30 renamed ModifiedCosine -> ModifiedCosineGreedy (Greedy is the
+# direct successor; a Hungarian variant was added alongside it).
+from matchms.similarity import ModifiedCosineGreedy
 import matplotlib
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 import matplotlib.ticker as ticker
 import dreams.utils.misc as utils
-import plotly.graph_objs as go
-from typing import List, Union, Iterable
+from typing import List, Union
 from dreams.utils.misc import get_closest_values, contains_similar
 from dreams.utils.mols import mol_to_formula, formula_to_dict
 from dreams.utils.plots import init_plotting, save_fig, get_nature_hex_colors
@@ -683,7 +684,7 @@ def from_hot_logits(vals: torch.Tensor, bin_size: float) -> torch.Tensor:
 
 class PeakListModifiedCosine:
     def __init__(self, mz_tolerance: float = 0.05, unpad: bool = True):
-        self.cos_sim = ModifiedCosine(tolerance=mz_tolerance)
+        self.cos_sim = ModifiedCosineGreedy(tolerance=mz_tolerance)
         self.unpad = unpad
 
     def _peak_list_to_matchms(self, peak_list: np.ndarray, prec_mz: float) -> Spectrum:

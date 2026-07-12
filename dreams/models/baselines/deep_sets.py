@@ -4,9 +4,8 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 from torchmetrics.classification import BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryJaccardIndex
 from abc import abstractmethod
-from dreams.models.layers.fourier_features import FourierFeatures
 from dreams.models.layers.feed_forward import FeedForward
-from torchmetrics.classification import BinaryRecall, BinaryPrecision, BinaryConfusionMatrix
+from torchmetrics.classification import BinaryRecall, BinaryPrecision
 
 
 class DeepSets(nn.Module):

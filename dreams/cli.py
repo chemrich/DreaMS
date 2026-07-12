@@ -21,7 +21,7 @@ def serialize(x):
     return x
 
 
-if __name__ == '__main__':
+def main():
     fire.Fire({
         'lcmsms_to_hdf5': lcmsms_to_hdf5,
         'downloadpublicdata_to_hdf5s': downloadpublicdata_to_hdf5s,
@@ -31,3 +31,7 @@ if __name__ == '__main__':
         'dreams_search': DreaMSSearch,
         'dreams_fluorine': predict_fluorine,
     }, serialize=serialize)
+
+
+if __name__ == '__main__':
+    main()

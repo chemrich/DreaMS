@@ -4,15 +4,12 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 from torchmetrics import Metric
 from torchmetrics.classification import (
-    BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryF1Score, BinarySpecificity, BinaryAUROC,
+    BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryF1Score, BinaryAUROC,
     BinaryROC, BinaryPrecisionRecallCurve, BinaryAveragePrecision)
-from torchmetrics.regression import PearsonCorrCoef
 from torchmetrics.aggregation import SumMetric
 from abc import abstractmethod
 from pathlib import Path
 from typing import Optional, Any, Union
-import itertools
-import pandas as pd
 import plotly.graph_objects as go
 import dreams.utils.mols as mu
 import dreams.utils.io as io
@@ -505,7 +502,7 @@ class BinClassificationHead(FineTuningHead):
 
         # ROC
         self._update_metric(
-            f'val_roc',
+            'val_roc',
             BinaryROC,
             (label_pred.squeeze(), data['label'].long()),
             label_pred.size(0),
@@ -513,7 +510,7 @@ class BinClassificationHead(FineTuningHead):
         )
         # PR curve
         self._update_metric(
-            f'val_pr',
+            'val_pr',
             BinaryPrecisionRecallCurve,
             (label_pred.squeeze(), data['label'].long()),
             label_pred.size(0),
@@ -529,7 +526,7 @@ class BinClassificationHead(FineTuningHead):
         """
 
         # ROC curve
-        name = f'val_roc'
+        name = 'val_roc'
         if not hasattr(self, name):
             setattr(self, name, BinaryROC())
         roc = getattr(self, name)
@@ -543,7 +540,7 @@ class BinClassificationHead(FineTuningHead):
         roc.reset()
 
         # PR curve
-        name = f'val_pr'
+        name = 'val_pr'
         if not hasattr(self, name):
             setattr(self, name, BinaryPrecisionRecallCurve())
         pr_curve = getattr(self, name)
@@ -665,7 +662,7 @@ class FingerprintHead(FineTuningHead):
         real = data['label']
 
         metrics = self.val_metrics(pred, real)
-        metrics[f'Val loss'] = loss
+        metrics['Val loss'] = loss
 
         self.log_dict(metrics, sync_dist=True, on_epoch=True, on_step=False, batch_size=self.batch_size,
                       add_dataloader_idx=False)

@@ -65,19 +65,19 @@ class BatchedPeakListRandomProjection(PeakListRandomProjection):
             raise ValueError(f'peak_lists must be 3D array, got {peak_lists.ndim}D array')
 
         n = peak_lists.shape[0]
-        
+
         if not self.subbatch_size or self.subbatch_size >= n:
             return self.__compute_batch(peak_lists, as_str=as_str)
 
         lshs = []
         batch_idx = range(0, n, self.subbatch_size)
-        
+
         with tqdm(total=n, disable=not progress_bar, desc='Computing LSHs') as pbar:
             for i in batch_idx:
                 if logger:
                     logger.info(f'Computing LSH for batch [{i}:{i+self.subbatch_size}] (out of {n})...')
                 lshs.append(self.__compute_batch(peak_lists[i:i+self.subbatch_size, ...], as_str=as_str))
                 pbar.update(min(self.subbatch_size, n - i))
-        
+
         return np.concatenate(lshs)
 

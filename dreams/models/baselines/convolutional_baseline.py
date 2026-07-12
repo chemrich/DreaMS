@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class ConvolutionalBaseline(nn.Module):
@@ -38,7 +37,7 @@ class ConvolutionalBaseline(nn.Module):
             nn.ReLU(),
             nn.Linear(128, 1)
         )
-    
+
     def forward(self, x):
         x = self.pff(x).transpose(-2, -1)
         x = self.conv_layer1(x)

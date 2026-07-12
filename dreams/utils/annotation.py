@@ -1,22 +1,15 @@
-import h5py
-import atexit
 import numpy as np
 import pandas as pd
 import rdkit.Chem as Chem
 # from FPSim2 import FPSim2Engine  # NOTE: installed from local fork
-from abc import abstractmethod
 from pathlib import Path
-from typing import List, Union, Iterable
+from typing import List, Union
 from collections import Counter
 
-import torch
-import torch.nn.functional as F
 from sklearn.metrics.pairwise import cosine_similarity
 from tqdm import tqdm
 tqdm.pandas()
-from rdkit.DataStructs import ExplicitBitVect
 import dreams.utils.mols as mu
-from dreams.utils.io import setup_logger
 from dreams.definitions import *
 
 

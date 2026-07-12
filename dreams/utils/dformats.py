@@ -14,7 +14,7 @@ class DataFormat(ABC):
     min_file_spectra: int = NotImplementedError
     max_tbxic_stdev: float = NotImplementedError
 
-    # MS/MS quality filters 
+    # MS/MS quality filters
     max_ms_level: int = NotImplementedError
     min_peaks_n: int = NotImplementedError
     max_peaks_n: int = NotImplementedError
@@ -66,13 +66,13 @@ class DataFormat(ABC):
             if verbose:
                 print(f"Number of peaks check failed. Expected between {self.min_peaks_n} and {self.max_peaks_n}, got {spec.shape[1]}")
             return f"Number of peaks between {self.min_peaks_n} and {self.max_peaks_n}" if return_problems else False
-        
+
         # Check mz range
         if su.max_mz(spec) > self.max_mz:
             if verbose:
                 print(f"m/z range check failed. Expected <= {self.max_mz}, got {su.max_mz(spec)}")
             return f"m/z range <= {self.max_mz}" if return_problems else False
-        
+
         # Make relative intensities for the following checks
         spec = su.to_rel_intensity(spec)
 
@@ -81,13 +81,13 @@ class DataFormat(ABC):
             if verbose:
                 print(f"Intensity amplitude check failed. Expected >= {self.min_intensity_ampl}, got {su.intens_amplitude(spec)}")
             return f"Intensity amplitude >= {self.min_intensity_ampl}" if return_problems else False
-        
+
         # Check number of high intensity peaks
         if su.num_high_peaks(spec, self.high_intensity_thld) < self.min_peaks_n:
             if verbose:
                 print(f"Number of high intensity peaks check failed. Expected >= {self.min_peaks_n}, got {su.num_high_peaks(spec, self.high_intensity_thld)}")
             return f"Number of high intensity peaks >= {self.min_peaks_n}" if return_problems else False
-        
+
         if verbose:
             print('All checks passed')
 
@@ -224,7 +224,7 @@ def to_format(df: pd.DataFrame, dformat: DataFormat, filter=True, trimming=False
         if filter_block_mask is not None:
             df_filter_block = df[filter_block_mask].copy()
             df = df[~filter_block_mask].copy()
-            if verbose: print(f'Num. of block list entries:', len(df_filter_block))
+            if verbose: print('Num. of block list entries:', len(df_filter_block))
 
         if verbose: print('Initial size:', len(df))
         df = df[(df['CHARGE'].astype(int) >= dformat.min_charge) & (df['CHARGE'].astype(int) <= dformat.max_charge)]

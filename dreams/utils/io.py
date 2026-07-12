@@ -4,11 +4,9 @@ import pickle
 import json
 import os
 import h5py
-import click
 import re
 import numpy as np
 import pandas as pd
-import rdkit.Chem as Chem
 import pyteomics
 import matplotlib.pyplot as plt
 import urllib.parse as urlparse
@@ -22,9 +20,7 @@ with contextlib.redirect_stderr(std_io.StringIO()):
 import traceback
 from collections import Counter
 from functools import cache
-from matchms.importing import load_from_mgf
 from pathlib import Path
-from matchms import Spectrum
 from typing import Tuple, List, Optional, Union, Iterable
 from itertools import groupby
 from tqdm import tqdm
@@ -433,7 +429,7 @@ def read_textual_ms_format(
                 if not utils.is_float(v):
                     raise ValueError(f'Invalid value for {k}: "{v}"')
                 v = float(v)
-            
+
             # Parse ionization mode
             if k == IONMODE:
                 v = v.lower()
@@ -466,7 +462,7 @@ def read_textual_ms_format(
             spec[SPECTRUM][0].append(mz)
             spec[SPECTRUM][1].append(intensity)
             continue
-    
+
     # Convert to DataFrame
     df = pd.DataFrame(data)
 
@@ -641,7 +637,7 @@ def read_mzml(
         logger.info(f'Started processing {pth}')
 
     exp = _load_experiment(pth, logger)
-    if not exp: 
+    if not exp:
         return pd.DataFrame()
 
     mzxml_energies = None
@@ -651,7 +647,7 @@ def read_mzml(
         except Exception as e:
             if logger:
                 logger.warning(f'Failed to extract collision energies from mzXML: {e}')
-    
+
     problems = Counter()
     if store_extra:
 
@@ -679,7 +675,7 @@ def read_mzml(
         acq_info = spec.getAcquisitionInfo()
         inject_t = acq_info[0].getMetaValue('MS:1000927') if acq_info is not None and acq_info.size() > 0 else -1
 
-        if (mslevel != 2) and (not store_extra): continue 
+        if (mslevel != 2) and (not store_extra): continue
 
         # Track all spectra for precursor intensity lookup and validation (only needed with store_extra)
         if mslevel == 1:
@@ -697,15 +693,15 @@ def read_mzml(
                 msg = 'Assigning scan numbers automatically (no "scan=" in the file).'
                 logger.info(msg) if logger else print(msg)
             scan_i = i + 1
-            automatic_scans_message = True      
+            automatic_scans_message = True
         if scan_range and (scan_i < scan_range[0] or scan_i > scan_range[1]):
             continue
 
         if mslevel == 1:
             continue
-        
+
         if store_extra and mslevel - 1 in prev_spectra:
-            
+
             prec_entry = prev_spectra[mslevel-1]
             prec_spectrum = prec_entry[0]
 
@@ -733,7 +729,7 @@ def read_mzml(
 
             if store_extra:
                 peak_list = su.process_peak_list(np.array([mzs, intensities]), sort_mzs=True)
-            else: 
+            else:
                 peak_list = np.stack(spec.get_peaks())
             problems_list = su.is_valid_peak_list(peak_list, return_problems_list=True, relative_intensities=False)
             if problems_list:
@@ -840,7 +836,7 @@ def read_mzml(
             logger.info(f'Polarity: {df["polarity"].value_counts().to_json()}')
             logger.info(f'Charge: {df[CHARGE].value_counts().to_json()}')
             logger.info(f'Spectrum type hist: {df["spectrum_type"].value_counts().to_json()}')
-            
+
     elif verbose and problems:
         print(f'Spectra problems in {pth.name}: {dict(problems)}')
 
@@ -1066,7 +1062,7 @@ def lcmsms_to_hdf5(
     if df_msn_data is not None:
         if not output_path:
             output_path = os.path.splitext(input_path)[0] + '.hdf5'
-            
+
         parsed_lcmsms_to_hdf(
             output_path=output_path,
             file_props=file_props,
@@ -1447,12 +1443,12 @@ def parsed_lcmsms_to_hdf(
                                             compression=compress_full_lvl)
                     prec_group.create_dataset('def str', data=df_msn_data['def str'],
                                             dtype=h5py.string_dtype('utf-8', None), compression=compress_full_lvl)
-                    
+
                     n_spectra = msn_group['mzs'].shape[0]
 
                     prec_intensities = []
                     targ_intensities = []
-                    
+
                     all_prec_id = msn_group['precursor id'][:]
                     for i in range(n_spectra):
                         prec_id = all_prec_id[i]
@@ -1715,8 +1711,8 @@ def merge_lcmsms_hdf5s(
                 if is_old_format:
                     container = f_in['MSn data']
                     spectra = np.stack([container['mzs'][:], container['intensities'][:]], axis=1)
-                    
-                else: 
+
+                else:
                     container = f_in
                     spectra = container[SPECTRUM][:]
                 if spectra.shape[2] > dformat_filters.max_peaks_n:

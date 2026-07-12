@@ -18,7 +18,7 @@ from tqdm import tqdm
 def hf_download(repo_id: str, file_pth: str, local_dir: T.Optional[T.Union[str, Path]] = None, repo_type: str = "dataset") -> str:
     """
     Download a file from the Hugging Face Hub and return its location on disk.
-    
+
     Args:
         repo_id (str): Hugging Face repository ID.
         file_pth (str): Name of the file to download.
@@ -37,7 +37,7 @@ def hf_download(repo_id: str, file_pth: str, local_dir: T.Optional[T.Union[str, 
 def download_pretrained_model(model_name: str = 'embedding_model.ckpt', download_dir: Path = PRETRAINED, verbose: bool = True):
     """
     Download a pre-trained model from the Hugging Face Hub and return its location on disk.
-    
+
     Args:
         model_name (str): Name of the model to download.
         download_dir (Path): Local directory to download the model to.
@@ -46,7 +46,7 @@ def download_pretrained_model(model_name: str = 'embedding_model.ckpt', download
     # Old method of downloading from Zenodo
     # target_path = download_dir / model_name
     # url = 'https://zenodo.org/records/10997887/files/' + model_name
-    
+
     # # Create the download directory if it doesn't exist
     # target_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -57,7 +57,7 @@ def download_pretrained_model(model_name: str = 'embedding_model.ckpt', download
     #                 pbar.total = total_size
     #             pbar.update(block_size)
     #         urllib.request.urlretrieve(url, target_path, reporthook=report_hook)
-            
+
     # download_with_progress(url, target_path)
     # return target_path
 
@@ -75,7 +75,7 @@ def download_pretrained_model(model_name: str = 'embedding_model.ckpt', download
 def gems_hf_download(file_pth: str, local_dir: T.Optional[T.Union[str, Path]] = None) -> str:
     """
     Download a GeMS file from the Hugging Face Hub and return its location on disk.
-    
+
     Args:
         file_pth (str): Name of the file to download.
         local_dir (Optional[Union[str, Path]]): Local directory to download the file to.
@@ -91,14 +91,14 @@ def gems_hf_download(file_pth: str, local_dir: T.Optional[T.Union[str, Path]] = 
 def networkx_to_dataframe(G: nx.Graph) -> pd.DataFrame:
     # Initialize a list to store the data for each node
     data = []
-    
+
     # Gather all node and edge attribute keys
     node_attr_keys = set()
     edge_attr_keys = set()
-    
+
     for node, attrs in G.nodes(data=True):
         node_attr_keys.update(attrs.keys())
-        
+
     for u, v, attrs in G.edges(data=True):
         edge_attr_keys.update(attrs.keys())
 
@@ -106,29 +106,29 @@ def networkx_to_dataframe(G: nx.Graph) -> pd.DataFrame:
     for node in G.nodes(data=True):
         node_id = node[0]
         node_attrs = node[1]  # Node attributes
-        
+
         # Initialize node data with default values (None for missing attributes)
         node_data = {'node_id': node_id}
         for key in node_attr_keys:
             node_data[key] = node_attrs.get(key, None)
-        
+
         # Get neighbors
         neighbors = list(G.neighbors(node_id))
         node_data['neighbors'] = neighbors
-        
+
         # Get edge attributes for each neighbor
         for key in edge_attr_keys:
             node_data[f'edge_{key}'] = [
                 G.get_edge_data(node_id, neighbor).get(key, None)
                 for neighbor in neighbors
             ]
-        
+
         # Append the dictionary to the data list
         data.append(node_data)
-    
+
     # Create a DataFrame from the data list
     df = pd.DataFrame(data)
-    
+
     return df
 
 
@@ -171,7 +171,6 @@ def knn_search(
         - indices: Tensor of shape (n_query, topk) with topk most similar reference indices.
         - similarities: Tensor of shape (n_query, topk) with cosine similarity scores.
     """
-    from dreams.utils.io import ChunkedDatasetAccessor
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def _is_in_memory(x):

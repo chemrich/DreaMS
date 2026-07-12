@@ -56,22 +56,30 @@ It is also possible to run DreaMS remotely in Google Colab, as demonstrated in t
 ## Getting started locally
 
 ### Installation
-Run the following code from the command line.
+
+DreaMS uses [uv](https://docs.astral.sh/uv/) for package management. Install uv
+(see the [uv install docs](https://docs.astral.sh/uv/getting-started/installation/)),
+then run:
 
 ``` shell
 # Download this repository
 git clone https://github.com/pluskal-lab/DreaMS.git
 cd DreaMS
 
-# Create conda environment
-conda create -n dreams python==3.11.0 --yes
-conda activate dreams
+# Create the environment from the lockfile (uv installs Python 3.13 automatically)
+uv sync
 
-# Install DreaMS
-pip install -e .
+# ...or include the dev tools (pytest, ruff, mypy, pre-commit)
+uv sync --extra dev
 ```
 
-If you are not familiar with conda or do not have it installed, please refer to the [official documentation](https://conda.io/projects/conda/en/latest/user-guide/getting-started.html).
+`uv sync` creates a `.venv/` with the exact, locked dependency versions. Prefix
+commands with `uv run` to execute inside it (e.g. `uv run python`,
+`uv run pytest`), or activate it with `source .venv/bin/activate`.
+
+> **Python 3.13+ / GPU note.** DreaMS targets Python 3.13 and 3.14. On Linux,
+> `torch` is pulled as the CPU build (there is no CUDA wheel for Python 3.14 yet);
+> for CUDA, use Python 3.13 and adjust the `torch` source in `pyproject.toml`.
 
 ### Compute DreaMS representations
 
