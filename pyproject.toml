@@ -176,8 +176,5 @@ follow_imports = "silent"
 [[tool.mypy.overrides]]
 module = [
     "dreams.api",
-    "dreams.utils.io",
-    "dreams.utils.misc",
-    "dreams.utils.dformats",
 ]
 ignore_errors = true

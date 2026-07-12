@@ -270,8 +270,8 @@ def parse_sirius_ms(spectra_file: str) -> Tuple[dict, List[Tuple[str, np.ndarray
         lines, lambda line: line.startswith(">") or line.startswith("#")
     )
 
-    for index, (start_line, lines) in enumerate(my_iterator):
-        group_lines = list(lines)
+    for index, (start_line, grouped_lines) in enumerate(my_iterator):
+        group_lines = list(grouped_lines)
         subject_lines = list(next(my_iterator)[1])
         # Get spectra
         if group_num > 0:
@@ -648,11 +648,12 @@ def read_mzml(
             if logger:
                 logger.warning(f'Failed to extract collision energies from mzXML: {e}')
 
-    problems = Counter()
+    problems: Counter = Counter()
     if store_extra:
 
         file_props, instrument_props = _validate_store_extra(exp, pth, logger)
-        if file_props is None:
+        # _validate_store_extra returns both or neither.
+        if file_props is None or instrument_props is None:
             return pd.DataFrame()
 
         tbxic_stdev = instrument_props.get('TBXICs median stdev')
@@ -661,10 +662,10 @@ def read_mzml(
     df = []
     automatic_scans_message = False
 
-    prev_spectra = {}
+    prev_spectra: dict = {}
     prev_spectrum = None
-    prec_spectra_data = {'peak list': [], 'RT': [], 'scan id': []}
-    prec_problems = Counter()
+    prec_spectra_data: dict = {'peak list': [], 'RT': [], 'scan id': []}
+    prec_problems: Counter = Counter()
     ms1_n, msn_n = 0, 0
 
     for i, spec in enumerate(tqdm(exp, desc=f'Reading {pth.name}', disable=not verbose)):
@@ -685,9 +686,9 @@ def read_mzml(
             prev_spectra[prev_spectrum.getMSLevel()] = (prev_spectrum.get_peaks(), rt, i)
         prev_spectrum = spec
 
-        scan_i = re.search(r'scan=(\d+)', spec.getNativeID())
-        if scan_i:
-            scan_i = int(scan_i.group(1))
+        scan_match = re.search(r'scan=(\d+)', spec.getNativeID())
+        if scan_match:
+            scan_i = int(scan_match.group(1))
         else:
             if verbose and not automatic_scans_message:
                 msg = 'Assigning scan numbers automatically (no "scan=" in the file).'
@@ -785,6 +786,7 @@ def read_mzml(
 
             # Spectrum type and filter string
             spec_type = lcms.get_spectrum_type(spec)
+            assert isinstance(spec_type, lcms.SpecType)  # never None/int for spectra taken from an MSExperiment
             scan_def = spec.getMetaValue('filter string') if spec.metaValueExists('filter string') else None
 
             collision_energy = prec.getMetaValue('collision energy') if prec.metaValueExists('collision energy') else 0
@@ -1672,9 +1674,9 @@ def merge_lcmsms_hdf5s(
     if not valid_inputs:
         raise ValueError('No valid input .hdf5 files were found for merging.')
 
-    union_keys = sorted(union_keys)
+    union_keys_sorted = sorted(union_keys)
 
-    metadata_buffers = {field: [] for field in metadata_fields}
+    metadata_buffers: dict = {field: [] for field in metadata_fields}
     metadata_buffers['file_name'] = []
 
     def _dataset_create_kwargs(dtype):
@@ -1732,7 +1734,7 @@ def merge_lcmsms_hdf5s(
                     np.int32,
                 )
 
-                for key in union_keys:
+                for key in union_keys_sorted:
                     if key in container:
                         data = container[key][:]
                     else:
@@ -1979,9 +1981,9 @@ def clean_ftps(ftps: dict, verbose=True):
         print('No duplicate filenames:', len(ftps_clean))
 
     # 3. Percent encode reserved URI characters (see https://en.wikipedia.org/wiki/Percent-encoding)
-    ftps_clean = {urlparse.quote(f): ftps[f] for f in ftps_clean}
+    ftps_encoded = {urlparse.quote(f): ftps[f] for f in ftps_clean}
 
-    return ftps_clean
+    return ftps_encoded
 
 
 def compress_hdf(hdf_pth, out_pth=None, compression='gzip', compression_opts=4):

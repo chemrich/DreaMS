@@ -10,24 +10,22 @@ class DataFormat(ABC):
     Abstract class for DataFormats.
     """
 
+    # Declared without values: concrete subclasses must define them all.
+
     # LC-MS quality filters
-    min_file_spectra: int = NotImplementedError
-    max_tbxic_stdev: float = NotImplementedError
+    min_file_spectra: int
+    max_tbxic_stdev: float
 
     # MS/MS quality filters
-    max_ms_level: int = NotImplementedError
-    min_peaks_n: int = NotImplementedError
-    max_peaks_n: int = NotImplementedError
-    min_charge: int = NotImplementedError
-    max_charge: int = NotImplementedError
-    min_intensity_ampl: float = NotImplementedError
-    max_prec_mz: float = NotImplementedError
-    max_mz: float = NotImplementedError
-    high_intensity_thld: float = NotImplementedError
-
-    # LSH parameters
-    lsh_n_hplanes: int = NotImplementedError
-    lsh_bin_size: float = NotImplementedError
+    max_ms_level: int
+    min_peaks_n: int
+    max_peaks_n: int
+    min_charge: int
+    max_charge: int
+    min_intensity_ampl: float
+    max_prec_mz: float
+    max_mz: float
+    high_intensity_thld: float
 
     def val_spec(
             self,
