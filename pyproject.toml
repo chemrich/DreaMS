@@ -50,10 +50,11 @@ dependencies = [
     # install it manually (and are limited by its stale rdkit-pypi pin upstream).
     "fire>=0.6.0",
     "huggingface_hub>=0.33.5",
-    # Git deps pinned to immutable commits (was `@main` — non-reproducible).
-    # AUDIT: this "legacy architectures" package is the most likely upgrade
-    # blocker; it may itself constrain torch/numpy. Fork/vendor if it won't resolve.
-    "msml @ git+https://github.com/roman-bushuiev/msml_legacy_architectures.git@d35b34b0caee38348098cda852bff30d8b25cd25",
+    # msml (legacy architectures) is needed only to unpickle the pretrained DreaMS
+    # checkpoint, which references its classes. Pinned to our fork, which patches
+    # the same matchms API drift fixed in dreams itself (upstream is unmaintained
+    # at d35b34b). Immutable commit for reproducibility.
+    "msml @ git+https://github.com/chemrich/dreams_legacy_architectures.git@af23d367be364a9edfd829d60e6ded6d93e2b509",
 ]
 
 [project.urls]

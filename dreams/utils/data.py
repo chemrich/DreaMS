@@ -323,11 +323,24 @@ class MSData:
                         if isinstance(v[0], Chem.rdchem.Mol):
                             v = pd.Series([Chem.MolToSmiles(m) for m in v])
 
-                    if v.dtype == object:
-                        v = v.astype(str)
-                    v = v.values
+                    # Coerce string-like columns to a plain object ndarray of Python
+                    # strings. pandas 2.x backs string columns with pyarrow
+                    # (ArrowStringArray: dtype.kind 'O' but not numpy `object`), which
+                    # neither the old `== object` check nor h5py/.values handles.
+                    if pd.api.types.is_string_dtype(v) or v.dtype == object:
+                        # str() every element: pyarrow-backed columns return None for
+                        # missing values from .tolist(), which h5py's vlen-str refuses.
+                        v = np.array([str(x) for x in v], dtype=object)
+                    else:
+                        v = np.asarray(v)
 
-                f.create_dataset(k, data=v, compression='gzip', compression_opts=compression_opts)
+                # String/object columns (e.g. NAME, ADDUCT, SMILES) have no native
+                # HDF5 dtype; store them as variable-length UTF-8.
+                if v.dtype == object or v.dtype.kind in ('U', 'S'):
+                    f.create_dataset(k, data=v, dtype=h5py.string_dtype(),
+                                     compression='gzip', compression_opts=compression_opts)
+                else:
+                    f.create_dataset(k, data=v, compression='gzip', compression_opts=compression_opts)
         return MSData(hdf5_pth, in_mem=in_mem, mode=mode)
 
     @staticmethod
