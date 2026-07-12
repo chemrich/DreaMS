@@ -5,6 +5,24 @@ Guidance for Claude Code working in this repo. This is a **fork** of
 `chemrich/DreaMS` (`origin`), modernized off the original research code.
 `upstream` is `pluskal-lab/DreaMS`.
 
+## ALL work targets `chemrich/DreaMS` — never `pluskal-lab/DreaMS`
+
+Push, open PRs, and file issues **only** against the `chemrich/DreaMS` fork
+(`origin`). `upstream` is fetch-only: we track it, we never write to it.
+
+Because this repo is a *fork*, `gh` targets the **parent** (`pluskal-lab`) by
+default, and a PR against upstream fails with a misleading
+`Resource not accessible by personal access token` — it looks like a token-scope
+problem but is really a wrong-repo problem. Two guards are in place; keep them:
+
+```bash
+gh repo set-default chemrich/DreaMS   # persisted as remote.origin.gh-resolved=base
+git remote set-url --push upstream DISABLED_use_origin_chemrich  # push to upstream fails
+```
+
+A fresh clone has **neither** guard — re-apply both. When in doubt, pass
+`--repo chemrich/DreaMS` explicitly to every `gh` command.
+
 ## Platform: modern Linux x86_64 ONLY
 
 This project runs only on modern Linux and **never on macOS**. `[tool.uv]
