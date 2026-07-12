@@ -59,7 +59,7 @@ def break_rings(mol: Mol, rings_size: int = 3) -> Mol:
                 return list(set(ring))
     while (ring := get_ring(mol, size=rings_size)) is not None:
         bonds = mol.GetRingInfo().BondRings()
-        degrees = [sum([atom in bond for bond in bonds]) 
+        degrees = [sum([atom in bond for bond in bonds])
                     for atom in ring]
         least_bond = np.argmin(degrees)
         atom = ring[least_bond]
@@ -72,7 +72,7 @@ def break_rings(mol: Mol, rings_size: int = 3) -> Mol:
         Chem.GetSymmSSSR(mol)
     return mol
 
-def murcko_hist(mol: Mol, as_dict: bool = True, show_mol_scaffold: bool = False, 
+def murcko_hist(mol: Mol, as_dict: bool = True, show_mol_scaffold: bool = False,
                 no_residue_atom_as_linker: bool = True, break_three_membered_rings: bool = True) -> Union[Dict[str, int], Tuple[np.ndarray, np.ndarray]]:
     """
     Computes the Murcko scaffold histogram for a given molecule.
@@ -88,8 +88,8 @@ def murcko_hist(mol: Mol, as_dict: bool = True, show_mol_scaffold: bool = False,
         break_three_membered_rings (bool, optional): If True, break all three-membered rings before processing. Defaults to True.
 
     Returns:
-        Union[Dict[str, int], Tuple[np.ndarray, np.ndarray]]: 
-            If as_dict is True, returns a dictionary where keys are string representations of (adjacent rings, adjacent linkers) 
+        Union[Dict[str, int], Tuple[np.ndarray, np.ndarray]]:
+            If as_dict is True, returns a dictionary where keys are string representations of (adjacent rings, adjacent linkers)
             and values are counts.
             If as_dict is False, returns a tuple of two numpy arrays: unique (adjacent rings, adjacent linkers) pairs and their counts.
     """
@@ -149,7 +149,7 @@ def murcko_hists_dist(h1: Dict[str, int], h2: Dict[str, int]) -> int:
     """
     Computes the distance between two Murcko histogram dictionaries.
 
-    The distance is calculated as the sum of absolute differences between 
+    The distance is calculated as the sum of absolute differences between
     corresponding histogram values, including keys present in only one histogram.
 
     Args:

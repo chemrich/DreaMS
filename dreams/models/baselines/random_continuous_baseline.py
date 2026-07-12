@@ -10,7 +10,7 @@ class RandomContinuousBaseline(nn.Module):
     def __init__(self, y_train):
         super(RandomContinuousBaseline, self).__init__()
         self.mu = stats.mean(y_train)
-        self.sigma = stats.stdev(y_train) 
+        self.sigma = stats.stdev(y_train)
 
     def forward(self, x):
         batch_size = x.shape[0]

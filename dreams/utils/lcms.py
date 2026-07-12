@@ -150,7 +150,7 @@ def get_tight_xics(msdata, mz_tol_1=0.5, mz_tol_2=0.01, intensity_rel_tol=0.1, x
     :param msdata: ms data to boild XICs from
     :param mz_tol_1: absolute width of m/z tolerance windown for I. traversal
     :param mz_tol_2: absolute width of m/z tolerance windown for II. traversal
-    :param intensity_rel_tol: peaks 
+    :param intensity_rel_tol: peaks
     :param xic_len_thld: threshold for the number of peaks in XICs (XICs are filtered both after I. and II.)
     :param n_highest_peaks: number of highest peaks to choose in I.
 
@@ -342,7 +342,7 @@ def get_pwiz_stats(msdata):
                 pwiz_stats['pwiz_to_mzml_type={}'.format(spec_type.value)] += 1
                 peaks = spectrum.get_peaks()
                 if spec_type == SpecType.CENTROID and peaks and np.count_nonzero(peaks[1] == 0):
-                    pwiz_stats[f'pwiz_zero_mz_centroid'] += 1
+                    pwiz_stats['pwiz_zero_mz_centroid'] += 1
     return pwiz_stats
 
 

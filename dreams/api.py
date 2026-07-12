@@ -1,11 +1,9 @@
-from threading import local
 import warnings
 warnings.filterwarnings(
     "ignore",
     category=UserWarning,
     message="pkg_resources is deprecated as an API"
 )
-import sys
 import platform
 import torch
 import pandas as pd
@@ -76,7 +74,7 @@ class PreTrainedModel:
 
             if remove_unused_backbone_parameters:
                 model.model = cls.remove_unused_backbone_parameters(model.model)
-            
+
             return model
         else:
 
@@ -303,7 +301,7 @@ def dreams_intermediates(
         }
     else:
         embeddings = None
-    
+
     # Preallocate memory for attention matrices
     if compute_attn_matrices:
         attn_matrices = {
@@ -457,7 +455,7 @@ class DreaMSAtlas:
                      "license and request the files from the authors at roman.bushuiev@uochb.cas.cz."
                 )
         else:
-            knn_pth = utils.gems_hf_download(f'DreaMS_Atlas/DreaMS_Atlas_3NN.npz', local_dir=local_dir)
+            knn_pth = utils.gems_hf_download('DreaMS_Atlas/DreaMS_Atlas_3NN.npz', local_dir=local_dir)
         self.csrknn = du.CSRKNN.from_npz(knn_pth)
         print(f'Loaded DreaMS Atlas edges ({self.csrknn.n_nodes:,} nodes and {self.csrknn.n_edges:,} edges).')
 
@@ -469,7 +467,7 @@ class DreaMSAtlas:
                      "license and request the files from the authors at roman.bushuiev@uochb.cas.cz."
                 )
         else:
-            dreams_clusters_pth = utils.gems_hf_download(f'DreaMS_Atlas/DreaMS_Atlas_3NN_clusters.csv', local_dir=local_dir)
+            dreams_clusters_pth = utils.gems_hf_download('DreaMS_Atlas/DreaMS_Atlas_3NN_clusters.csv', local_dir=local_dir)
         self.dreams_clusters = pd.read_csv(dreams_clusters_pth)['clusters']
         print(f'Loaded DreaMS Atlas k-NN cluster representatives from GeMS-C1 ({self.dreams_clusters.nunique():,} representatives).')
 
@@ -494,7 +492,7 @@ class DreaMSAtlas:
             self.knn_i_to_repr = np.unique(self.dreams_clusters)  # When NIST20 is not hidden
         else:
             self.knn_i_to_repr = np.load(
-                utils.gems_hf_download(f'DreaMS_Atlas/DreaMS_Atlas_3NN_knn_i_to_repr.npz', local_dir=local_dir)
+                utils.gems_hf_download('DreaMS_Atlas/DreaMS_Atlas_3NN_knn_i_to_repr.npz', local_dir=local_dir)
             )['knn_i_to_repr']
             print(f'Loaded mapping from k-NN indices to node representatives (corresponding to {len(self.knn_i_to_repr):,} nodes).')
         self.repr_to_knn_i = dict(zip(
@@ -512,7 +510,7 @@ class DreaMSAtlas:
             return {i: self.get_lsh_cluster(i) for i in idx}
         elif data:
             return self.get_data(idx, msv_metadata=msv_metadata)
-        
+
         return idx
 
     def get_lsh_cluster(
@@ -582,7 +580,7 @@ class DreaMSAtlas:
                 data[i] = self.gems.at(
                     int(i) - self.lib.num_spectra, plot_mol=plot, plot_spec=plot, return_spec=return_spec
                 )
-    
+
             # NOTE: tmp fix for newly renamed datasets
             # TODO: assign columns with proper names and reuploaded the data to HF
             if 'dataset' in data[i].keys():
@@ -660,7 +658,7 @@ class DreaMSAtlas:
                 metadata = self.msv_metadata.loc[data['msv_id']]
                 data.update(metadata.to_dict())
         return data
-    
+
     def _subset_data(self, data, vals):
         return {k: v for k, v in data.items() if k in vals}
 
@@ -698,7 +696,7 @@ class DreaMSAtlas:
                     bfs_graph.add_edge(current_index, neighbor, weight=similarity)
                     if neighbor not in visited:
                         queue.append((neighbor, depth + 1))
-        
+
         # Decode knn index to full data index
         bfs_graph = nx.relabel_nodes(bfs_graph, {n: self.decode_knn_i(n) for n in bfs_graph.nodes()})
 
@@ -714,13 +712,13 @@ class DreaMSAtlas:
 
     def decode_knn_i(self, knn_i):
         return self.knn_i_to_repr[knn_i]
-    
+
     def get_lib_idx(self):
         if self.nist20:
             return np.array(range(self.lib.num_spectra))  # When NIST20 is not hidden
         else:
             return np.where(self.lib[PRECURSOR_MZ] != -1)[0]  # -1 values are hidden NIST20 spectra
-    
+
     def __len__(self):
         return self.lib.num_spectra + self.gems.num_spectra
 
@@ -766,7 +764,7 @@ class DreaMSSearch:
         # Compute embeddings for query spectra
         if not isinstance(query_spectra, du.MSData):
             query_spectra = du.MSData.load(query_spectra, in_mem=True, mode='a')
-        
+
         if DREAMS_EMBEDDING not in query_spectra.columns():
             dreams_embeddings(query_spectra, model_pth=self.model_pth, store_embs=True)
 
@@ -799,7 +797,7 @@ class DreaMSSearch:
                             row[f'{col}'] = query_spectra.get_values(col, i)
                         if col in self.ref_spectra.columns():
                             row[f'ref_{col}'] = self.ref_spectra.get_values(col, j)
-                    
+
                     # Add all metadata columns for query and reference spectra
                     if out_all_metadata:
                         for col in query_spectra.columns():
@@ -813,7 +811,7 @@ class DreaMSSearch:
                     if out_spectra:
                         row[SPECTRUM] = query_spectra.get_spectra(i)
                         row[f'ref_{SPECTRUM}'] = self.ref_spectra.get_spectra(j)
-                    
+
                     # Add DreaMS embeddings for query and reference spectra
                     if out_embs:
                         row[DREAMS_EMBEDDING] = query_spectra.get_values(DREAMS_EMBEDDING, i).tolist()
@@ -827,7 +825,7 @@ class DreaMSSearch:
                         'DreaMS_similarity' : similarities[i][k],
                     })
                     df.append(row)
-        
+
         # Return None if no neighbors found
         if len(df) == 0:
             if self.verbose:
@@ -931,7 +929,7 @@ def predict_fluorine(
 
     # Only 111k checkpoint passes threshold
     df.loc[(df['F_preds_111k_steps'] > 0.95) & (df['tag'] == ''), 'tag'] = 'Only 111k checkpoint > 0.95 hit'
-    df.loc[(df['F_preds_111k_steps'] > 0.9) & (df['tag'] == ''), 'tag'] = 'Only 111k checkpoint > 0.9 hit' 
+    df.loc[(df['F_preds_111k_steps'] > 0.9) & (df['tag'] == ''), 'tag'] = 'Only 111k checkpoint > 0.9 hit'
     df.loc[(df['F_preds_111k_steps'] > 0.75) & (df['tag'] == ''), 'tag'] = 'Only 111k checkpoint > 0.75 hit'
 
     # Mark low quality spectra
@@ -940,7 +938,7 @@ def predict_fluorine(
 
     # Sort tags and F_preds_111k_steps within each tag group
     df = df.sort_values(
-        by=['tag', 'F_preds_111k_steps'], 
+        by=['tag', 'F_preds_111k_steps'],
         key=lambda x: x.map({
             '> 0.95 hit': 0,
             '> 0.9 hit': 1,

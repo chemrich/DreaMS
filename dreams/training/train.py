@@ -1,9 +1,6 @@
-import h5py
-import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 import wandb
-import time
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import LearningRateMonitor
@@ -14,7 +11,6 @@ warnings.filterwarnings('ignore', message='.*cpp.*')  # Suppress internal torch 
 warnings.filterwarnings('ignore', category=NumbaDeprecationWarning)  # Supress numba warnings from UMAP
 import dreams.utils.data as du
 from dreams.utils.io import setup_logger
-import dreams.utils.io as io
 from dreams.models.dreams.dreams import DreaMS
 # from dreams.models.vanilla_bert.bert import VanillaBERT
 from dreams.models.heads.heads import *
@@ -239,7 +235,7 @@ def main(args):
                     group=args.run_name, entity=args.wandb_entity_name)
                 wandb_logger = WandbLogger()
             else:
-                wandb_logger = WandbLogger(project=args.project_name, name=args.run_name, config=args, 
+                wandb_logger = WandbLogger(project=args.project_name, name=args.run_name, config=args,
                     entity=args.wandb_entity_name)
         else:
             wandb_logger = None

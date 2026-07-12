@@ -28,7 +28,7 @@ def show_mols(mols, legends='new_indices', smiles_in=None, svg=False, sort_by_le
     Returns svg image representing a grid of skeletal structures of the given molecules
 
     :param mols: list of rdkit molecules
-    :param legends: list of labels for each molecule, length must be equal to the length of mols. 
+    :param legends: list of labels for each molecule, length must be equal to the length of mols.
                    Can be 'new_indices' for default numbering, 'masses' for molecular weights,
                    or a list of custom labels
     :param smiles_in: True - SMILES inputs, False - RDKit mols, None - determine automatically

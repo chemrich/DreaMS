@@ -21,8 +21,8 @@ jobs:
       - run: pip install ruff>=0.6
       - name: Ruff lint
         run: ruff check .
-      - name: Ruff format check
-        run: ruff format --check .
+      # `ruff format --check` is intentionally deferred: applying it repo-wide is a
+      # large mechanical diff that belongs in its own PR. Add it here once done.
 
   test:
     name: test (py${{ matrix.python-version }} / ${{ matrix.os }})

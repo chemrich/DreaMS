@@ -10,7 +10,6 @@ import random
 import pickle
 import igraph
 import networkx as nx
-import scipy
 # import spectral_entropy
 import pynndescent
 import plotly.graph_objects as go
@@ -39,9 +38,9 @@ import dreams.utils.spectra as su
 import dreams.utils.mols as mu
 import dreams.utils.io as io
 import dreams.utils.misc as utils
-from dreams.utils.dformats import DataFormat, DataFormatA
+from dreams.utils.dformats import DataFormat
 from dreams.models.layers.feed_forward import FeedForward
-from dreams.models.optimization.losses_metrics import FingerprintMetrics, CosSimLoss
+from dreams.models.optimization.losses_metrics import FingerprintMetrics
 from dreams.models.optimization.samplers import MaxVarBatchSampler
 from dreams.definitions import *
 
@@ -212,7 +211,7 @@ class MSData:
         if in_mem:
             print(f'Loading dataset {self.hdf5_pth.stem} into memory ({self.num_spectra} {"spectra" if self.num_spectra > 1 else "spectrum"})...')
             self.data = self.load_hdf5_in_mem(self.f)
-        
+
         self.index_col = index_col
         self.index_to_i = None
         if index_col is not None:
@@ -280,7 +279,7 @@ class MSData:
 
         # Check for empty dataset
         if not len(df):
-            raise ValueError(f'Input dataset is empty (most likely doesn\'t contain MS2 spectra).')
+            raise ValueError('Input dataset is empty (most likely doesn\'t contain MS2 spectra).')
 
         # Validate num. of peaks
         if n_highest_peaks is None:
@@ -415,11 +414,11 @@ class MSData:
             df[SPECTRUM] = list(self.get_spectra())
             if unpad:
                 df[SPECTRUM] = [su.unpad_peak_list(s) for s in df[SPECTRUM]]
-            
+
             df[SPECTRUM] = [s.tolist() for s in df[SPECTRUM]]
 
         return pd.DataFrame(df)
-    
+
     def to_mgf(self, out_pth: Union[Path, str]):
         import unicodedata
 
@@ -504,10 +503,10 @@ class MSData:
 
     def get_adducts(self, idx=None):
         return self.get_values(ADDUCT, idx)
-    
+
     def get_charges(self, idx=None):
         return self.get_values(CHARGE, idx)
-    
+
     def get_smiles(self, idx=None):
         return self.get_values(SMILES, idx)
 
@@ -633,7 +632,7 @@ class MSData:
         for col in cols:
             if not all(col in h5py.File(pth, 'r').keys() for pth in pths):
                 raise ValueError(f'Column "{col}" is not present in all of the datasets.')
-        
+
         if add_dataset_col and DATASET not in cols:
             cols.append(DATASET)
 
@@ -680,9 +679,9 @@ class MSData:
                         else:
                             f_out[k].resize(f_out[k].shape[0] + data.shape[0], axis=0)
                             f_out[k][-data.shape[0]:] = data
-        
+
         return MSData(out_pth, in_mem=in_mem)
-    
+
     def __repr__(self) -> str:
         return f'MSData(pth={self.hdf5_pth}, in_mem={self.in_mem}) with {len(self):,} spectra.'
 
@@ -951,14 +950,14 @@ def subset_lsh(
     if out_pth is None:
         out_pth = io.append_to_stem(in_pth, f'{max_specs_per_lsh}')
     print(f'Subsetting LSHs from {in_pth} to {out_pth}...')
-    
-    print(f'Loading dataset...')
+
+    print('Loading dataset...')
     msdata = MSData(in_pth, in_mem=True)
     lshs = msdata.get_values(lsh_col)
 
     if max_specs_per_lsh == 1:
         # For max_specs_per_lsh=1, we can just take first occurrence of each unique LSH (fast)
-        print(f'Subsetting LSHs...')
+        print('Subsetting LSHs...')
         _, idx = np.unique(lshs, return_index=True)
         filtered_idx = np.sort(idx)
     else:
@@ -1099,7 +1098,7 @@ class MaskedSpectraDataset(Dataset):
         # Construct the mapping from file names to corresponding spectra to sample retention order pairs
         if self.ret_order_pairs:
             logger.info('Constructing file name to spectra indices mapping for sampling retention order pairs...')
-            
+
             # Convert names to integers to speed up the process
             unique_names = np.unique(self.data[NAME])
             name_to_int = {name: i for i, name in enumerate(unique_names)}
@@ -1316,7 +1315,7 @@ class AnnotatedSpectraDataset(Dataset):
             item['smiles'] = Chem.MolToSmiles(self.spectra[i].get_precursor_mol(), isomericSmiles=False, canonical=True)
 
         return item
-    
+
 
 class LabeledSpectraDataset(Dataset):
     def __init__(self, msdata: Union[Path, str, MSData], label: str, spec_preproc: SpectrumPreprocessor,
@@ -1398,7 +1397,7 @@ class MatchmsSpectraDataset(Dataset):
         prec_mz = spec.metadata['precursor_mz']
 
         # Convert matchms spectrum to numpy array and preprocess
-        spec = np.vstack([spec.peaks.mz, spec.peaks.intensities])       
+        spec = np.vstack([spec.peaks.mz, spec.peaks.intensities])
         spec = self.spec_preproc(spec, prec_mz=prec_mz, high_form=False)
 
         return {SPECTRUM: spec, PRECURSOR_MZ: prec_mz}
@@ -1621,12 +1620,12 @@ class CSRKNN:
     def to_graph(self, directed=True, graph_class="igraph"):
         """
         Convert CSR matrix to a graph object using the specified library.
-        
+
         Parameters:
         - directed (bool): If True, creates a directed graph. If False, creates an undirected graph.
-        - graph_class (str): Specifies which graph library to use. 
+        - graph_class (str): Specifies which graph library to use.
                             "igraph" for igraph.Graph, "networkx" for networkx.Graph.
-        
+
         Returns:
         - Graph object: igraph.Graph or networkx.Graph based on the specified `graph_class`.
         """
@@ -1669,13 +1668,13 @@ def condense_dreams_knn(graph, thld, embs, logger):
     # Sort nodes by degree
     degrees = graph.degree()
     vertices = sorted(list(range(graph.vcount())), key=lambda i: degrees[i], reverse=True)
-    
+
     for node in tqdm(vertices, desc='Forming clusters', file=tqdm_logger):
         if node not in visited:
             current_cluster = [node]
             visited.add(node)
             queue = [node]
-            
+
             # Perform BFS from `node`
             while queue:
                 current_node = queue.pop(0)
@@ -1687,7 +1686,7 @@ def condense_dreams_knn(graph, thld, embs, logger):
                     # Do not revisit nodes
                     if neighbor in visited:
                         continue
-                    
+
                     # Go over each neighbour with similairty >= thld and add it to a cluster only if it guaranteed to
                     # transitively have similairty >= thld to cluster representative `node`
                     if graph.es[graph.get_eid(current_node, neighbor)]['weight'] >= thld:
@@ -1695,7 +1694,7 @@ def condense_dreams_knn(graph, thld, embs, logger):
                             visited.add(neighbor)
                             queue.append(neighbor)
                             current_cluster.append(neighbor)
-            
+
             clusters.append(current_cluster)
     return clusters
 

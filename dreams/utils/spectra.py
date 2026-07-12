@@ -13,8 +13,7 @@ import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 import matplotlib.ticker as ticker
 import dreams.utils.misc as utils
-import plotly.graph_objs as go
-from typing import List, Union, Iterable
+from typing import List, Union
 from dreams.utils.misc import get_closest_values, contains_similar
 from dreams.utils.mols import mol_to_formula, formula_to_dict
 from dreams.utils.plots import init_plotting, save_fig, get_nature_hex_colors

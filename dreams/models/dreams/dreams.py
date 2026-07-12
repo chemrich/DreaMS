@@ -3,11 +3,8 @@ from torch import nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from tqdm import tqdm
-from pathlib import Path
-import pandas as pd
 from torchmetrics.functional import pairwise_cosine_similarity
-from typing import Union, Dict
-from torch.utils.data.dataloader import DataLoader
+from typing import Dict
 from dreams.models.layers.fourier_features import FourierFeatures
 from dreams.models.layers.feed_forward import FeedForward
 import dreams.utils.spectra as su

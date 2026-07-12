@@ -1,4 +1,3 @@
-import pytest
 
 def test_break_rings():
     from dreams.algorithms.murcko_hist.murcko_hist import break_rings
