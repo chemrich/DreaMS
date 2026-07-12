@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install ruff>=0.6
+      - name: Ruff lint
+        run: ruff check .
+      - name: Ruff format check
+        run: ruff format --check .
+
+  test:
+    name: test (py${{ matrix.python-version }} / ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      # Install CPU-only torch first. The default PyPI torch wheel on Linux is a
+      # multi-GB CUDA build, and no CUDA cp314 wheel exists yet — the CPU index is
+      # both leaner and the only thing that resolves on 3.14. This pre-seeds the
+      # resolver so the `pip install .[dev]` below reuses it instead of pulling CUDA.
+      - name: Install CPU torch
+        run: pip install "torch>=2.9" --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install package (with dev extras)
+        run: pip install -e ".[dev]"
+
+      - name: Run tests
+        # Skip `slow` tests (they download model weights / datasets from HF).
+        run: pytest -m "not slow" --cov --cov-report=term-missing
