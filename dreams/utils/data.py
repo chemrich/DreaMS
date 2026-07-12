@@ -130,7 +130,6 @@ class SpectrumPreprocessor:
         # Clean spectrum as in spectral entropy paper
         if self.spec_entropy_cleaning:
             raise NotImplementedError("Spectral entropy was removed as a dependency from the project.")
-            spec = spectral_entropy.tools.clean_spectrum(spec)
 
         # Trim and pad peak list
         if self.n_highest_peaks:
@@ -205,7 +204,7 @@ class MSData:
 
         self.in_mem = in_mem
         self.num_spectra = num_spectra.pop()
-        self.data = self.f
+        self.data: Union[io.ChunkedHDF5File, h5py.File, dict, "_ConcatDataProxy"] = self.f
         self.mode = mode
 
         if in_mem:
@@ -346,7 +345,7 @@ class MSData:
     @staticmethod
     def from_mzml(
         pth: Union[Path, str],
-        output_pth: Union[Path, str] = None,
+        output_pth: Optional[Union[Path, str]] = None,
         scan_range: Optional[Tuple[int, int]] = None,
         verbose_parser: bool = False,
         store_extra: bool = False,
@@ -354,9 +353,12 @@ class MSData:
         **kwargs
     ):
         pth = Path(pth)
+        output_pth = Path(output_pth) if output_pth is not None else None
         logger = None
         if store_extra:
-            log_path = log_path or str(output_pth.with_suffix('.log'))
+            if log_path is None:
+                # Log beside the output file when there is one, otherwise beside the input.
+                log_path = str((output_pth if output_pth is not None else pth).with_suffix('.log'))
             logger = io.setup_logger(log_path, log_name=pth.stem)
         df = io.read_mzml(pth, output_path=output_pth, scan_range=scan_range, verbose=verbose_parser, store_extra=store_extra, logger=logger)
 
@@ -397,7 +399,7 @@ class MSData:
         return MSData.from_pandas(df, hdf5_pth=pth.with_suffix('.hdf5'), in_mem=in_mem, **kwargs)
 
     @staticmethod
-    def load(pth: Union[Path, str], in_mem=False, **kwargs):
+    def load(pth: Union[Path, str], in_mem=False, **kwargs) -> "MSData":
         pth = Path(pth)
         if pth.suffix.lower() == '.hdf5':
             return MSData.from_hdf5(pth, in_mem=in_mem, **kwargs)
@@ -1810,7 +1812,8 @@ class SpecRetrievalValidation(ImplExplValidation):
 class ContrastiveValidation(ImplExplValidation):
 
     def __init__(self, nist_like_pkl_pth, pairs_pkl_pth, dformat: DataFormat, spec_preproc: SpectrumPreprocessor,
-                 n_instances=None, n_samples=None, seed=3, save_out_basename: pathlib.Path = None, euclidean=False):
+                 n_instances=None, n_samples=None, seed=3, save_out_basename: Optional[pathlib.Path] = None,
+                 euclidean=False):
         random.seed(seed)
         self.save_out_basename = save_out_basename
         self.euclidean = euclidean
@@ -1896,7 +1899,7 @@ class ContrastiveValidation(ImplExplValidation):
 
 class KNNValidation(ContrastiveValidation):
     def __init__(self, nist_like_pkl_pth, pairs_pkl_pth, dformat: DataFormat, spec_preproc: SpectrumPreprocessor, k=3,
-                 n_instances=None, n_samples=None, seed=3, save_out_basename: pathlib.Path = None):
+                 n_instances=None, n_samples=None, seed=3, save_out_basename: Optional[pathlib.Path] = None):
         super().__init__(nist_like_pkl_pth, pairs_pkl_pth, dformat, spec_preproc, n_instances, n_samples, seed,
                          save_out_basename)
         self.k = k

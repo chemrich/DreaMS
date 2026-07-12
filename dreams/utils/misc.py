@@ -14,6 +14,10 @@ from pathlib import Path
 from dreams.definitions import PRETRAINED
 from tqdm import tqdm
 
+if T.TYPE_CHECKING:
+    # Import-time cycle (dreams.utils.io imports this module), so type-checking only.
+    import dreams.utils.io
+
 
 def hf_download(repo_id: str, file_pth: str, local_dir: T.Optional[T.Union[str, Path]] = None, repo_type: str = "dataset") -> str:
     """
@@ -211,6 +215,7 @@ def knn_search(
         if query_tensor is not None:
             qbatch = query_tensor[i:end]
         else:
+            assert query_ds is not None  # set whenever query_tensor is not
             chunk_np = np.asarray(query_ds[i:end])
             qbatch = torch.from_numpy(chunk_np).float().to(device)
             qbatch = torch.nn.functional.normalize(qbatch, dim=1)
@@ -234,6 +239,7 @@ def knn_search(
             if ref_cpu is not None:
                 ref_chunk = ref_cpu[ref_start:ref_end].to(device)
             else:
+                assert ref_ds is not None  # set whenever ref_cpu is not
                 chunk_np = np.asarray(ref_ds[ref_start:ref_end])
                 ref_chunk = torch.from_numpy(chunk_np).float().to(device)
                 ref_chunk = torch.nn.functional.normalize(ref_chunk, dim=1)
@@ -361,7 +367,7 @@ def complete_permutation(arr: np.array):
     return a
 
 
-def calc_attention_entropy(attention_scores, as_plot=True, save_out_basename: pathlib.Path = None):
+def calc_attention_entropy(attention_scores, as_plot=True, save_out_basename: T.Optional[pathlib.Path] = None):
     """
     :param attention_scores: dict with [0, num_layers] keys and tensor (batch_size, num_heads, seq_len, seq_len) values.
     """
@@ -392,19 +398,19 @@ def calc_attention_entropy(attention_scores, as_plot=True, save_out_basename: pa
 def merge_stats(stats: Sequence[dict], sets_len=False):
 
     # List of dicts to dict of lists
-    stats = {k: [d[k] for d in stats] for k in stats[0].keys()}
+    merged: dict = {k: [d[k] for d in stats] for k in stats[0].keys()}
 
     # Merge each statistic withing list
-    for k in stats.keys():
-        if isinstance(stats[k][0], int):
-            stats[k] = sum(stats[k])
-        elif isinstance(stats[k][0], Counter):
-            stats[k] = dict(sum(stats[k], Counter()))
-        elif isinstance(stats[k][0], set):
-            stats[k] = set().union(*stats[k])
+    for k in merged.keys():
+        if isinstance(merged[k][0], int):
+            merged[k] = sum(merged[k])
+        elif isinstance(merged[k][0], Counter):
+            merged[k] = dict(sum(merged[k], Counter()))
+        elif isinstance(merged[k][0], set):
+            merged[k] = set().union(*merged[k])
             if sets_len:
-                stats[k] = len(stats[k])
+                merged[k] = len(merged[k])
         else:
             raise NotImplementedError
 
-    return stats
+    return merged

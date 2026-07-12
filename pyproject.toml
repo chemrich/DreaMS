@@ -159,8 +159,9 @@ omit = ["dreams/training/*", "experiments/*"]
 
 [tool.mypy]
 python_version = "3.13"
-files = ["dreams"]
-exclude = '(^|/)(experiments|tutorials|docs)/'
+# experiments/ is checked too: it was already clean, and leaving it out let it rot.
+files = ["dreams", "experiments"]
+exclude = '(^|/)(tutorials|docs)/'
 # Third-party deps (rdkit, numba, pyopenms, matchms, ...) ship no type stubs.
 ignore_missing_imports = true
 # Only report errors in the file being checked, not in untyped modules it imports.
@@ -169,21 +170,7 @@ follow_imports = "silent"
 # `uv tool run mypy@2.2.0`, i.e. no project deps installed. A full env
 # (`uv run mypy`) makes mypy load rdkit's bundled stubs, which contain a syntax
 # error it can't parse. Isolated runs rely on ignore_missing_imports and are fine.
-# Gradual typing: lenient globally now; tighten (disallow_untyped_defs, etc.) per
-# module as it gets typed. 18 of 31 modules are already clean under this config.
-
-# Quarantine — these legacy modules still have type errors (169 total). They're
-# excused from failing CI so the hook is green today; un-quarantine one at a time
-# as it's typed. Progress = shrinking this list. See per-file counts in the PR.
-[[tool.mypy.overrides]]
-module = [
-    "dreams.api",
-    "dreams.utils.plots",
-    "dreams.utils.io",
-    "dreams.utils.data",
-    "dreams.utils.misc",
-    "dreams.utils.dformats",
-    "dreams.utils.mols",
-    "dreams.models.heads.heads",
-]
-ignore_errors = true
+# Gradual typing: lenient globally (no disallow_untyped_defs yet), but every module
+# in the `dreams` package is now type-clean — the ignore_errors quarantine is gone.
+# Keep it that way: fix new errors rather than re-adding an overrides block.
+# Next step to tighten: enable disallow_untyped_defs per module.
