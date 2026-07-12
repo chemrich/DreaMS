@@ -4,7 +4,6 @@ warnings.filterwarnings(
     category=UserWarning,
     message="pkg_resources is deprecated as an API"
 )
-import platform
 import torch
 import pandas as pd
 import typing as T
@@ -25,10 +24,6 @@ from dreams.models.heads.heads import *
 from dreams.definitions import *
 
 
-if platform.system() == 'Windows':
-    pathlib.PosixPath = pathlib.WindowsPath
-
-
 class PreTrainedModel:
     def __init__(self, model: T.Union[DreaMSModel, FineTuningHead], n_highest_peaks: int = 100):
         self.model = model.eval()
@@ -47,12 +42,12 @@ class PreTrainedModel:
     @classmethod
     def from_ckpt(
         cls,
-        ckpt_path: Path,
+        ckpt_path: T.Union[Path, str],
         ckpt_cls: T.Union[T.Type[DreaMSModel], T.Type[FineTuningHead]],
         n_highest_peaks: int,
         remove_unused_backbone_parameters: bool = True,
         dreams_args: T.Optional[dict] = None
-    ):
+    ) -> "PreTrainedModel":
 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -103,7 +98,7 @@ class PreTrainedModel:
             return model
 
     @classmethod
-    def from_name(cls, name: str):
+    def from_name(cls, name: str) -> "PreTrainedModel":
         if name == DREAMS_EMBEDDING:
             ckpt_path = PRETRAINED / 'embedding_model.ckpt'
             ckpt_cls = ContrastiveHead
@@ -171,8 +166,8 @@ def dreams_predictions(
         if msdata.mode != 'a' and store_preds:
             raise ValueError('Adding new columns is allowed only in append mode. Initialize msdata as '
                              '`MSData(..., mode="a")` to add new columns.')
-    spectra = msdata.to_torch_dataset(spec_preproc)
-    dataloader = DataLoader(spectra, batch_size=batch_size, shuffle=False, drop_last=False)
+    torch_dataset = msdata.to_torch_dataset(spec_preproc)
+    dataloader = DataLoader(torch_dataset, batch_size=batch_size, shuffle=False, drop_last=False)
 
     # Setup logger writing progress to a file
     if logger_pth:
@@ -188,7 +183,7 @@ def dreams_predictions(
         title = 'DreaMS_prediction'
 
     # Preallocate memory for predictions
-    num_samples = len(spectra)
+    num_samples = len(torch_dataset)
     output_shape = model(next(iter(dataloader))[SPECTRUM].to(device=model.device, dtype=model.dtype)).shape[1:]
     preds = torch.zeros((num_samples, *output_shape), dtype=model.dtype)
 
@@ -230,7 +225,7 @@ def dreams_embeddings(pth, model_pth=DREAMS_EMBEDDING, batch_size=32, progress_b
 
 def dreams_intermediates(
         model: T.Union[Path, str, PreTrainedModel],
-        msdata: T.Union[Path, str],
+        msdata: T.Union[Path, str, du.MSData],
         layers_idx=None,
         precursor_only=True,
         batch_size=32,
@@ -240,7 +235,7 @@ def dreams_intermediates(
         n_highest_peaks=60,
         compute_attn_matrices=True,
         compute_embeddings=False,
-        spec_preproc: du.SpectrumPreprocessor=None
+        spec_preproc: T.Optional[du.SpectrumPreprocessor] = None
     ):
     """
     Extracts intermediate representations (embeddings and attention matrices) from individual layers of a DreaMS model.
@@ -287,18 +282,21 @@ def dreams_intermediates(
     )
 
     # Prepare torch data loader
-    msdata = msdata.to_torch_dataset(spec_preproc)
-    dataloader = DataLoader(msdata, batch_size=batch_size, shuffle=False, drop_last=False)
+    torch_dataset = msdata.to_torch_dataset(spec_preproc)
+    dataloader = DataLoader(torch_dataset, batch_size=batch_size, shuffle=False, drop_last=False)
 
     # Determine layers to extract embeddings from
     if not layers_idx:
         layers_idx = [model.model.n_layers - 1]
 
-    # Preallocate memory for embeddings
+    # Preallocate memory for embeddings. Rebound below to numpy arrays, and to a single
+    # array when one layer is requested, so they are deliberately untyped.
+    embeddings: T.Any = None
+    attn_matrices: T.Any = None
     if compute_embeddings:
         embeddings = {
             i: torch.zeros((
-                len(msdata),
+                len(torch_dataset),
                 model.model.d_model
             ), device='cpu', dtype=model.model.dtype)
             for i in layers_idx
@@ -310,10 +308,10 @@ def dreams_intermediates(
     if compute_attn_matrices:
         attn_matrices = {
             i: torch.zeros((
-                len(msdata),
+                len(torch_dataset),
                 model.model.n_heads,
-                msdata[0][SPECTRUM].shape[0],
-                msdata[0][SPECTRUM].shape[0]
+                torch_dataset[0][SPECTRUM].shape[0],
+                torch_dataset[0][SPECTRUM].shape[0]
             ), device='cpu', dtype=model.model.dtype)
             for i in layers_idx
         }
@@ -390,7 +388,7 @@ def dreams_intermediates(
 
 def dreams_attn_scores(
         model: T.Union[Path, str, DreaMSModel],
-        msdata: T.Union[Path, str],
+        msdata: T.Union[Path, str, du.MSData],
         layers_idx=None,
         precursor_only=True,
         batch_size=32,
@@ -398,7 +396,7 @@ def dreams_attn_scores(
         spec_col=SPECTRUM,
         prec_mz_col=PRECURSOR_MZ,
         n_highest_peaks=None,
-        spec_preproc: du.SpectrumPreprocessor = None
+        spec_preproc: T.Optional[du.SpectrumPreprocessor] = None
     ):
     return dreams_intermediates(
         model=model,
@@ -410,9 +408,10 @@ def dreams_attn_scores(
         spec_col=spec_col,
         prec_mz_col=prec_mz_col,
         n_highest_peaks=n_highest_peaks,
-        attention_matrices=True,
+        compute_attn_matrices=True,
+        compute_embeddings=False,
         spec_preproc=spec_preproc
-    )[1]
+    )
 
 
 class DreaMSAtlas:
@@ -430,53 +429,63 @@ class DreaMSAtlas:
         if local_dir is not None:
             local_dir = Path(local_dir)
         self.nist20 = nist20
-        if self.nist20:
-            lib_pth = local_dir / 'nist20_mona_clean_merged_spectra_dreams.hdf5'
+
+        # NIST20 files are licensed and cannot be downloaded, so they must be supplied locally.
+        nist20_dir: T.Optional[Path] = None
+        if nist20:
+            if local_dir is None:
+                raise ValueError(
+                    'NIST20 files cannot be downloaded. Pass `local_dir` pointing to the directory holding them.'
+                )
+            nist20_dir = local_dir
+
+        if nist20_dir is not None:
+            lib_pth = nist20_dir / 'nist20_mona_clean_merged_spectra_dreams.hdf5'
             if not lib_pth.exists():
                 raise FileNotFoundError(
                     f"The file '{lib_pth}' does not exist. To access the NIST20 files, please provide a valid NIST20 "
                      "license and request the files from the authors at roman.bushuiev@uochb.cas.cz."
                 )
         else:
-            lib_pth = utils.gems_hf_download(
+            lib_pth = Path(utils.gems_hf_download(
                 'DreaMS_Atlas/nist20_mona_clean_merged_spectra_dreams_hidden_nist20.hdf5',
                 local_dir=local_dir
-            )
+            ))
         self.lib = du.MSData(lib_pth, in_mem=False)
         print(f'Loaded spectral library ({len(self.lib):,} spectra).')
 
         self.gems = du.MSData.from_hdf5_chunks(
-            [utils.gems_hf_download(f'GeMS_C/GeMS_C1_DreaMS.{i}.hdf5', local_dir=local_dir) for i in range(10)],
+            [Path(utils.gems_hf_download(f'GeMS_C/GeMS_C1_DreaMS.{i}.hdf5', local_dir=local_dir)) for i in range(10)],
             in_mem=False
         )
         print(f'Loaded GeMS-C1 dataset ({len(self.gems):,} spectra).')
 
-        if self.nist20:
-            knn_pth = local_dir / 'DreaMS_Atlas_3NN_with_nist.npz'
+        if nist20_dir is not None:
+            knn_pth = nist20_dir / 'DreaMS_Atlas_3NN_with_nist.npz'
             if not knn_pth.exists():
                 raise FileNotFoundError(
                     f"The file '{knn_pth}' does not exist. To access the NIST20 files, please provide a valid NIST20 "
                      "license and request the files from the authors at roman.bushuiev@uochb.cas.cz."
                 )
         else:
-            knn_pth = utils.gems_hf_download('DreaMS_Atlas/DreaMS_Atlas_3NN.npz', local_dir=local_dir)
+            knn_pth = Path(utils.gems_hf_download('DreaMS_Atlas/DreaMS_Atlas_3NN.npz', local_dir=local_dir))
         self.csrknn = du.CSRKNN.from_npz(knn_pth)
         print(f'Loaded DreaMS Atlas edges ({self.csrknn.n_nodes:,} nodes and {self.csrknn.n_edges:,} edges).')
 
-        if self.nist20:
-            dreams_clusters_pth = local_dir / 'DreaMS_Atlas_3NN_clusters_with_nist.csv'
+        if nist20_dir is not None:
+            dreams_clusters_pth = nist20_dir / 'DreaMS_Atlas_3NN_clusters_with_nist.csv'
             if not dreams_clusters_pth.exists():
                 raise FileNotFoundError(
                     f"The file '{dreams_clusters_pth}' does not exist. To access the NIST20 files, please provide a valid NIST20 "
                      "license and request the files from the authors at roman.bushuiev@uochb.cas.cz."
                 )
         else:
-            dreams_clusters_pth = utils.gems_hf_download('DreaMS_Atlas/DreaMS_Atlas_3NN_clusters.csv', local_dir=local_dir)
+            dreams_clusters_pth = Path(utils.gems_hf_download('DreaMS_Atlas/DreaMS_Atlas_3NN_clusters.csv', local_dir=local_dir))
         self.dreams_clusters = pd.read_csv(dreams_clusters_pth)['clusters']
         print(f'Loaded DreaMS Atlas k-NN cluster representatives from GeMS-C1 ({self.dreams_clusters.nunique():,} representatives).')
 
         self.gems_lsh = du.MSData.from_hdf5_chunks(
-            [utils.gems_hf_download(f'GeMS_C/GeMS_C.{i}.hdf5', local_dir=local_dir) for i in range(10)],
+            [Path(utils.gems_hf_download(f'GeMS_C/GeMS_C.{i}.hdf5', local_dir=local_dir)) for i in range(10)],
             in_mem=False
         )
         self.lsh_clusters = self.gems_lsh['lsh'][:]
