@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 import itertools
-import urllib
+import urllib.parse
+import urllib.request
 import json
 import time
 import ase
@@ -255,7 +256,7 @@ def smiles_to_inchi14(s):
     return mol_to_inchi14(Chem.MolFromSmiles(s))
 
 
-def generate_fragments(mol: Chem.Mol, max_cuts: int = None):
+def generate_fragments(mol: Chem.Mol, max_cuts: Optional[int] = None):
     """
     Generates all possible fragments of a molecule up to a certain number of bond cuts or without the restriction if
     `max_cuts` is not specified.
@@ -282,11 +283,12 @@ def generate_fragments(mol: Chem.Mol, max_cuts: int = None):
             for fragment in Chem.GetMolFrags(new_mol, asMols=True, sanitizeFrags=False):
                 fragments.add(Chem.MolToSmiles(fragment))
 
-    fragments = [Chem.MolFromSmiles(f) for f in fragments]
-    return [f for f in fragments if f is not None]
+    fragment_mols = [Chem.MolFromSmiles(f) for f in fragments]
+    return [f for f in fragment_mols if f is not None]
 
 
-def generate_spectrum(mol: Chem.Mol, prec_mz: float = None, fragments: List = None, max_cuts: int = None):
+def generate_spectrum(mol: Chem.Mol, prec_mz: Optional[float] = None, fragments: Optional[List] = None,
+                      max_cuts: Optional[int] = None):
     """
     Generates an MS/MS spectrum by exhaustively simulating the m/z values of theoretical fragments of a given molecule.
     The algorithm is very simplistic since it considers only subgraph-like fragments, does not consider isotopes, etc.
