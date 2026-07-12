@@ -43,7 +43,11 @@ dependencies = [
     "matchms>=0.27.0",
     "pyopenms>=3.5.0",       # 3.5 ships cp314 wheels on all OSes — kills the setup.py platform hack
     "igraph>=0.11.4",
-    "molplotly>=1.1.7",
+    # molplotly removed from core: it's used only in 4 experiment notebooks (not in
+    # the library or tests) and transitively requires `rdkit-pypi`, the deprecated
+    # RDKit distribution that has no wheels for Python 3.13/3.14. The official
+    # `rdkit` (required above) supersedes it. Notebook users who need molplotly must
+    # install it manually (and are limited by its stale rdkit-pypi pin upstream).
     "fire>=0.6.0",
     "huggingface_hub>=0.33.5",
     # Git deps pinned to immutable commits (was `@main` — non-reproducible).
