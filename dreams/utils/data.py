@@ -400,7 +400,7 @@ class MSData:
         return MSData.from_pandas(df, hdf5_pth=pth.with_suffix('.hdf5'), in_mem=in_mem, **kwargs)
 
     @staticmethod
-    def load(pth: Union[Path, str], in_mem=False, **kwargs):
+    def load(pth: Union[Path, str], in_mem=False, **kwargs) -> "MSData":
         pth = Path(pth)
         if pth.suffix.lower() == '.hdf5':
             return MSData.from_hdf5(pth, in_mem=in_mem, **kwargs)
