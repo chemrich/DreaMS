@@ -259,7 +259,7 @@ class RegressionHead(FineTuningHead):
     """
 
     def __init__(self, backbone: Union[Path, DreaMS], lr, weight_decay, sigmoid=True, out_dim=1,
-                 mol_props_calc: mu.MolPropertyCalculator = None, head_depth=1, dropout=0):
+                 mol_props_calc: Optional[mu.MolPropertyCalculator] = None, head_depth=1, dropout=0):
         """
         Initialize the RegressionHead.
 
@@ -346,7 +346,7 @@ class IntRegressionHead(RegressionHead):
             weight_decay (float): Weight decay for the optimizer.
             out_dim (int): Output dimension of the regression (default: 1).
         """
-        super().__init__(backbone_pth=backbone_pth, lr=lr, weight_decay=weight_decay, sigmoid=False, out_dim=out_dim)
+        super().__init__(backbone=backbone_pth, lr=lr, weight_decay=weight_decay, sigmoid=False, out_dim=out_dim)
 
     def validation_step(self, data, batch_idx):
         """
@@ -396,7 +396,7 @@ class BinClassificationHead(FineTuningHead):
         """
         super().__init__(backbone=backbone_pth, lr=lr, weight_decay=weight_decay, precursor_emb=head_phi_depth == 0)
         self.head = nn.Sequential(nn.Linear(self.backbone.d_model, 1), nn.Sigmoid())
-        self.metrics = {}
+        self.metrics: dict[str, Any] = {}
 
         # TODO: refactor
         self.train_acc, self.val_acc = BinaryAccuracy(), BinaryAccuracy()
@@ -561,7 +561,7 @@ class FingerprintHead(FineTuningHead):
 
     def __init__(self, backbone: Path, fp_str: str, lr, batch_size, weight_decay, dropout=0, loss='cos',
                  retrieval_val_pth=None, retrieval_epoch_freq=10, unfreeze_backbone_at_epoch=0,
-                 head_depth=1, store_val_out_dir: Path = None, head_phi_depth: int = 0):
+                 head_depth=1, store_val_out_dir: Optional[Path] = None, head_phi_depth: int = 0):
         """
         Initialize the FingerprintHead.
 
