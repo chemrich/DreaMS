@@ -19,6 +19,10 @@ cd "${DREAMS_DIR}" || exit 3
 # Replace `uv run python3 training/train.py` with
 # `srun --export=ALL --preserve-env uv run python3 training/train.py \`
 # when executing on a SLURM cluster via `sbatch`.
+#
+# NOTE (GPU branch): --train_precision is 32 here, not the paper's 64. fp64 is
+# very slow on GPUs without strong FP64 units (L4, RTX 40xx). Set it back to 64
+# to reproduce the paper exactly on FP64-capable hardware (e.g. A100/H100).
 uv run python3 training/train.py \
  --project_name MolecularProperties \
  --job_key "my_run_name" \
@@ -36,7 +40,7 @@ uv run python3 training/train.py \
  --log_every_n_steps 5 \
  --head_depth 1 \
  --seed 3407 \
- --train_precision 64   \
+ --train_precision 32   \
  --pre_trained_pth "${PRETRAINED}/ssl_model.ckpt" \
  --val_check_interval 0.1 \
  --max_peaks_n 100 \

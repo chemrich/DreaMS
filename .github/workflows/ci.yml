@@ -35,7 +35,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: ["3.13", "3.14"]
+        # gpu-cuda branch: 3.13 only (requires-python <3.14 — CUDA has no cp314
+        # wheels). Note: CI runners are CPU-only, so on Linux this installs the
+        # heavy +cu126 torch but only exercises the CPU code paths; GPU is
+        # validated separately via dreams/training/smoke_test.sh on a real GPU VM.
+        python-version: ["3.13"]
     steps:
       - uses: actions/checkout@v4
 

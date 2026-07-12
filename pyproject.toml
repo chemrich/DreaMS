@@ -9,13 +9,14 @@ description = "DreaMS (Deep Representations Empowering the Annotation of Mass Sp
 readme = "README.md"
 license = "MIT"
 authors = [{ name = "DreaMS developers" }]
-requires-python = ">=3.13"
+# GPU/CUDA branch: constrained to Python 3.13 — PyTorch has no CUDA (cp314) wheels
+# for 3.14 yet, so 3.14 would resolve to a CPU-only torch and silently train on CPU.
+requires-python = ">=3.13,<3.14"
 classifiers = [
     # NB: no `License ::` classifier — superseded by the SPDX `license` field above
     # under PEP 639 (setuptools>=77 rejects having both).
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
     "Operating System :: OS Independent",
 ]
 
@@ -95,21 +96,32 @@ docs = [
 [tool.setuptools.packages.find]
 include = ["dreams*"]
 
-# --- uv -------------------------------------------------------------------- #
+# --- uv (GPU/CUDA branch) --------------------------------------------------- #
 # uv is the package manager for this project (see README). `uv sync` installs
 # from the committed uv.lock for byte-reproducible environments; `uv run ...`
 # executes inside that env.
+#
+# This branch pulls the CUDA 12.6 build of torch on Linux (training VMs). To
+# target a different toolkit, change cu126 -> cu128/cu129 in the index url, then
+# re-run `uv lock`. macOS keeps its PyPI CPU/MPS wheel so local dev on a Mac works.
+#
+# Resolution is limited to the two environments this branch targets (Linux x86_64
+# GPU VMs and macOS dev); otherwise uv's universal resolver fails on platforms the
+# CUDA index doesn't serve.
+[tool.uv]
+environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "sys_platform == 'darwin'",
+]
+
 [[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
+name = "pytorch-cuda"
+url = "https://download.pytorch.org/whl/cu126"
 explicit = true
 
 [tool.uv.sources]
-# On Linux, PyPI's torch is the multi-GB CUDA build and there is no CUDA cp314
-# wheel yet — pull the CPU build from PyTorch's index. macOS uses its normal
-# PyPI wheel (CPU/MPS). Keep in sync with requires-python.
 torch = [
-    { index = "pytorch-cpu", marker = "sys_platform == 'linux'" },
+    { index = "pytorch-cuda", marker = "sys_platform == 'linux'" },
 ]
 
 [tool.ruff]
