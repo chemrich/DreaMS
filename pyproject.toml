@@ -178,11 +178,6 @@ module = [
     "dreams.utils.misc",
     "dreams.utils.dformats",
     "dreams.utils.mols",
-    "dreams.utils.spectra",
-    "dreams.utils.annotation",
-    "dreams.utils.lcms",
     "dreams.models.heads.heads",
-    "dreams.models.dreams.dreams",
-    "dreams.algorithms.murcko_hist.murcko_hist",
 ]
 ignore_errors = true
