@@ -18,13 +18,13 @@ def form_clusters(graph, thld, embs, logger):
     # Sort nodes by degree
     degrees = graph.degree()
     vertices = sorted(list(range(graph.vcount())), key=lambda i: degrees[i], reverse=True)
-    
+
     for node in tqdm(vertices, desc='Forming clusters', file=tqdm_logger):
         if node not in visited:
             current_cluster = [node]
             visited.add(node)
             queue = [node]
-            
+
             # Perform BFS from `node`
             while queue:
                 current_node = queue.pop(0)
@@ -36,7 +36,7 @@ def form_clusters(graph, thld, embs, logger):
                     # Do not revisit nodes
                     if neighbor in visited:
                         continue
-                    
+
                     # Go over each neighbour with similairty >= thld and add it to a cluster only if it guaranteed to
                     # transitively have similairty >= thld to cluster representative `node`
                     if graph.es[graph.get_eid(current_node, neighbor)]['weight'] >= thld:
@@ -44,7 +44,7 @@ def form_clusters(graph, thld, embs, logger):
                             visited.add(neighbor)
                             queue.append(neighbor)
                             current_cluster.append(neighbor)
-            
+
             clusters.append(current_cluster)
     return clusters
 
@@ -56,8 +56,8 @@ def main():
     lib_pth = Path('/auto/brno2/home/romanb/msml/msml/data/merged/datasets/nist20_mona_clean_merged_spectra_dreams.hdf5')
     gems_pth = Path('/storage/plzen1/home/romanb/msvn_C/msvn_C_H1000_KK1.merged.hdf5')
 
-    clusters1 = io.read_pickle(out_dir / f'DreaMS_Atlas_3NN_before40000000_clusters_09.pkl')
-    clusters2 = io.read_pickle(out_dir / f'DreaMS_Atlas_3NN_after40000000_clusters_09.pkl')
+    clusters1 = io.read_pickle(out_dir / 'DreaMS_Atlas_3NN_before40000000_clusters_09.pkl')
+    clusters2 = io.read_pickle(out_dir / 'DreaMS_Atlas_3NN_after40000000_clusters_09.pkl')
     d = sum(len(c) for c in clusters1)  # Shift for clusters2: 40_000_000 from GeMS and the rest from spectral library
     idx = [c[0] for c in clusters1] + [c[0] + d for c in clusters2]
     idx = sorted(idx)
@@ -119,7 +119,7 @@ def main():
     logger.info('Creating final PyNNDescent index for merged and pruned graph.')
     pynn_knn = pynndescent.PyNNDescentTransformer(
         metric='cosine', n_neighbors=k, search_epsilon=0.25, n_jobs=1, low_memory=True, verbose=True
-    ).fit_transform(all_embs) 
+    ).fit_transform(all_embs)
 
     logger.info('Initializing CSRKNN object.')
     knn = CSRKNN(pynn_knn)

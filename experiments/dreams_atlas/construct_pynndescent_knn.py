@@ -11,7 +11,6 @@ def main():
 
     k = 3
     out_dir = Path('/storage/plzen1/home/romanb/DreaMS_Atlas')
-    lib_pth = Path('/auto/brno2/home/romanb/msml/msml/data/merged/datasets/nist20_mona_clean_merged_spectra_dreams.hdf5')
     gems_pth = Path('/storage/plzen1/home/romanb/msvn_C/msvn_C_H1000_KK1.merged.hdf5')
 
     d = 40_000_000

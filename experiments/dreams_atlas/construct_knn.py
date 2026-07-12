@@ -1,16 +1,12 @@
 import h5py
 import numpy as np
-import seaborn as sns
 import pandas as pd
 # import nndescent
 # import pynndescent
 import ngtpy
 from tqdm import tqdm
 from pathlib import Path
-from sklearn.metrics.pairwise import cosine_similarity
-from annoy import AnnoyIndex
 from msml.utils.io import setup_logger, TqdmToLogger
-from msml.utils.data import CSRKNN
 
 
 def load_gems_embs(pth, logger):
@@ -89,7 +85,12 @@ def main():
     knn_i, knn_j, knn_w = [], [], []
     num_embs = ngt_index.get_num_of_objects()
     for i in tqdm(range(num_embs), desc='Constructing k-NN graph', file=tqdm_logger, total=num_embs):
-        nns, sims = np.array(ngt_index.search(embs[i], k + 1))[1:].T
+        # `embs` was deleted above (it only ever held the last chunk anyway, while `i`
+        # ranges over every object in the index), so the query vector must come back out
+        # of the index — cf. construct_annoy_knn.py, which uses Annoy's get_item_vector.
+        # NOTE: unverified at runtime — ngtpy is not a project dependency, so this script
+        # cannot even be imported here.
+        nns, sims = np.array(ngt_index.search(ngt_index.get_object(i), k + 1))[1:].T
         sims = 1 - sims
         knn_i.extend([i] * k)
         knn_j.extend(nns)

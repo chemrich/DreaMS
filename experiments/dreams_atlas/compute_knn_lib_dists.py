@@ -3,16 +3,11 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
-import igraph
-import h5py
 from pathlib import Path
 from tqdm import tqdm
 tqdm.pandas()
-from rdkit import Chem
 from pandarallel import pandarallel
 import msml.utils.data as du
-import msml.utils.spectra as su
-import msml.utils.mols as mu
 import msml.utils.io as io
 import msml.utils.plots as plots
 from msml.definitions import PRECURSOR_MZ, SPECTRUM
@@ -24,7 +19,6 @@ def main():
     seed = 1
 
     atlas_dir = Path('/storage/plzen1/home/romanb/DreaMS_Atlas')
-    gems_dir = Path('/storage/plzen1/home/romanb/msvn_C/')
     out_pth = atlas_dir / f'knn_lib_dists_k={k}_seed={seed}.npz'
 
     logger = io.setup_logger(out_pth.with_suffix('.log'))
@@ -52,7 +46,7 @@ def main():
         return e2
     def decode_knn_i(i):
         return cluster_idx_1[cluster_idx_2[i]]
-    
+
     logger.info('Constructing igraph graph.')
     g = knn.to_igraph(directed=False)
     components = g.components()
@@ -68,21 +62,21 @@ def main():
     def bfs_to_nodes_subset(graph, start_vertex, subset):
         visited = set()
         queue = [(start_vertex, 0)]  # (vertex, distance)
-        
+
         while queue:
             vertex, distance = queue.pop(0)
             visited.add(vertex.index)
-            
+
             # if vertex.index < stop_index:
             #     return distance
-            
+
             if decode_knn_i(vertex.index) in subset:
                 return distance, vertex.index
 
             for neighbor in vertex.neighbors():
                 if neighbor.index not in visited:
                     queue.append((neighbor, distance + 1))
-        
+
         return -1, -1  # If the stop index is not found within the BFS traversal
 
     lib_dists, rand_dists = [], []
@@ -91,7 +85,7 @@ def main():
         rand_dists.append(bfs_to_nodes_subset(g, g.vs[i], rand_nodes)[0])
     lib_dists = np.array(lib_dists)
     rand_dists = np.array(rand_dists)
-    
+
     logger.info('Saving results.')
     np.savez(out_pth, lib_dists=lib_dists, rand_dists=rand_dists)
 

@@ -119,9 +119,10 @@ torch = [{ index = "pytorch-cpu" }]
 [tool.ruff]
 line-length = 100
 target-version = "py313"
-# Notebooks and one-off scripts aren't library code — linting them is noise.
-# Bring them under lint in a dedicated pass later.
-extend-exclude = ["experiments", "tutorials", "docs", "*.ipynb"]
+# experiments/ and the notebooks are linted too: they were excluded as "not library
+# code", but that let real breakage (undefined names, duplicate imports) sit in the
+# tutorials users actually run. Only generated docs are excluded.
+extend-exclude = ["docs"]
 
 [tool.ruff.lint]
 # Start lenient so lint can be turned on in CI without a huge upfront cleanup;
@@ -140,6 +141,20 @@ ignore = [
     "E721",  # type comparison with `==`
     "E741",  # ambiguous var name (e.g. `l`)
 ]
+
+# Notebooks are linted too, with rules tuned per role.
+[tool.ruff.lint.per-file-ignores]
+# tutorials/ gets NO exemptions — they are user-facing, and F821 (undefined name) is
+# fully armed. Note this only works because their `from dreams.definitions import *`
+# preambles were replaced with explicit imports: with a star import present, ruff
+# cannot resolve names and downgrades every unknown one to F405 ("may be undefined"),
+# which silently disarms F821. Do not re-add a star import to a tutorial.
+#
+# experiments/ notebooks are research artifacts — cells are run out of order and left
+# half-finished, so unresolved names there are noise, not signal. Everything else stays
+# enforced: a plain syntax error (a missing comma in mol_props/baselines.ipynb) had been
+# sitting unnoticed behind the old blanket exclusion.
+"experiments/**/*.ipynb" = ["F403", "F405", "F821"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -84,7 +84,7 @@ def main():
     tqdm_logger = TqdmToLogger(logger)
 
     df_lib = pd.read_pickle(lib_pth)
-    lib_embs = np.stack(df_lib['DreaMS'].values) 
+    lib_embs = np.stack(df_lib['DreaMS'].values)
 
     annoy = AnnoyIndex(lib_embs.shape[1], metric='angular')
     for i, v in tqdm(enumerate(lib_embs), desc=f'Adding {lib_pth.name} DreaMS to annoy index', total=lib_embs.shape[0], file=tqdm_logger):
